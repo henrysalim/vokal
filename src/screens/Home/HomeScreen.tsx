@@ -11,7 +11,7 @@ const DAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const TODAY_IDX = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
 
 export default function HomeScreen() {
-  const { xp, level, levelName } = useUser();
+  const { xp, level, levelName, codeword } = useUser();
   const xpNextLevel = 2000;
   const xpPct = Math.min(100, Math.round((xp / xpNextLevel) * 100));
   const xpWidth = useSharedValue(0);
@@ -100,14 +100,14 @@ export default function HomeScreen() {
             <View className="flex-row justify-between items-start mb-4">
               <View>
                 <Text className="text-espresso/70 text-xs font-display uppercase tracking-widest mb-1">🔑 Codeword Hari Ini</Text>
-                <Text className="text-espresso text-[28px] font-heading tracking-widest">{MOCK_CODEWORD.word}</Text>
+                <Text className="text-espresso text-[28px] font-heading tracking-widest">{codeword.word}</Text>
                 <View className="flex-row items-center gap-1 mt-1 bg-olive/10 px-2 py-1 rounded-full self-start border border-olive/20">
                   <ShieldCheck color="#74822F" size={10} />
                   <Text className="text-olive text-[8px] font-bold uppercase tracking-wider">Secured by Blockchain</Text>
                 </View>
               </View>
               <View className="bg-espresso/5 rounded-2xl p-3 items-center">
-                <Text className="text-espresso font-display text-2xl">{MOCK_CODEWORD.expiresInHours}</Text>
+                <Text className="text-espresso font-display text-2xl">{codeword.expiresInHours}</Text>
                 <Text className="text-espresso/70 text-[10px] font-body">jam lagi</Text>
               </View>
             </View>
