@@ -1,6 +1,6 @@
-# CLAUDE.md — VOKAL Mobile App
+# AGENTS.md — VOKAL Mobile App
 
-This file gives Claude Code the context it needs to work on this repository. Read it before making changes. For anything about visual design, copy tone, or screen structure, also consult `.claude/skills/vokal-app-design/SKILL.md` — Claude should load that skill automatically for any UI/design task, but this file points to it explicitly as a backup.
+This file gives Gemini 3.6 Flash or Gemini 3.1 Pro the context it needs to work on this repository. Read it before making changes. For anything about visual design, copy tone, or screen structure, also consult `.gemini/skills/vokal-app-design/SKILL.md` — Gemini should load that skill automatically for any UI/design task, but this file points to it explicitly as a backup.
 
 ## 1. What this project is
 
