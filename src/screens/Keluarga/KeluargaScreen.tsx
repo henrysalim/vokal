@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeOut, FadeInDown, Layout } from 'react-native-reanimated';
-import { Users, BellRing, ShieldCheck, ChevronDown, ChevronUp, AlertCircle, PlusCircle } from 'lucide-react-native';
+import { Users, BellRing, ShieldCheck, ChevronDown, ChevronUp, AlertCircle, PlusCircle, KeyRound, X } from 'lucide-react-native';
 import { FAMILY_MEMBERS, MOCK_CODEWORD } from '../../data/mock';
+import { useUser } from '../../context/UserContext';
 
 export default function KeluargaScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [showSeedModal, setShowSeedModal] = useState(false);
+  const [tempSeed, setTempSeed] = useState('');
+  const { familySecret, updateFamilySecret, codeword } = useUser();
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -30,7 +34,7 @@ export default function KeluargaScreen() {
 
               <View className="flex-row justify-between items-center mb-4">
                 <View className="items-center">
-                  <Text className="text-white text-3xl font-display">{MOCK_CODEWORD.verifiedCount}/{MOCK_CODEWORD.totalCount}</Text>
+                  <Text className="text-white text-3xl font-display">{codeword.word ? '3' : '0'}/5</Text>
                   <Text className="text-cream/60 text-[10px] font-body mt-1">Hafal Codeword</Text>
                 </View>
                 <View className="w-[1px] h-10 bg-cream/20" />
@@ -40,10 +44,23 @@ export default function KeluargaScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity activeOpacity={0.8} className="bg-mustard rounded-2xl py-3 flex-row justify-center items-center gap-2">
-                <PlusCircle color="#3E2E22" size={18} />
-                <Text className="text-espresso font-display text-sm">Undang Keluarga</Text>
-              </TouchableOpacity>
+              <View className="flex-row gap-2 mt-2">
+                <TouchableOpacity activeOpacity={0.8} className="flex-1 bg-mustard rounded-xl py-3 flex-row justify-center items-center gap-2">
+                  <PlusCircle color="#3E2E22" size={16} />
+                  <Text className="text-espresso font-display text-xs">Undang</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  activeOpacity={0.8} 
+                  onPress={() => {
+                    setTempSeed(familySecret);
+                    setShowSeedModal(true);
+                  }}
+                  className="flex-1 bg-olive rounded-xl py-3 flex-row justify-center items-center gap-2"
+                >
+                  <KeyRound color="#FFFFFF" size={16} />
+                  <Text className="text-white font-display text-xs">Ubah Seed</Text>
+                </TouchableOpacity>
+              </View>
             </LinearGradient>
           </TouchableOpacity>
         </Animated.View>
@@ -104,6 +121,44 @@ export default function KeluargaScreen() {
         </View>
 
       </ScrollView>
+
+      {/* SEED MODAL */}
+      <Modal visible={showSeedModal} transparent animationType="fade">
+        <View className="flex-1 bg-espresso/90 justify-center px-5">
+          <View className="bg-cream rounded-3xl p-6">
+            <View className="flex-row justify-between items-center mb-4">
+              <Text className="font-heading text-lg text-espresso">Kunci Rahasia (Seed)</Text>
+              <TouchableOpacity onPress={() => setShowSeedModal(false)} className="bg-espresso/10 p-2 rounded-full">
+                <X color="#3E2E22" size={16} />
+              </TouchableOpacity>
+            </View>
+            <Text className="font-body text-xs text-text-muted mb-4">
+              Masukkan kalimat unik rahasia keluargamu. Pastikan setiap HP keluarga memasukkan seed yang persis sama agar Codeword TOTP selalu sinkron.
+            </Text>
+            
+            <TextInput
+              className="bg-white border border-espresso/20 rounded-xl p-4 font-body text-espresso mb-4"
+              value={tempSeed}
+              onChangeText={setTempSeed}
+              placeholder="Contoh: KeluargaCemara2026"
+              placeholderTextColor="#A39686"
+              autoCapitalize="none"
+            />
+
+            <TouchableOpacity 
+              activeOpacity={0.8}
+              onPress={() => {
+                updateFamilySecret(tempSeed);
+                setShowSeedModal(false);
+              }}
+              className="w-full bg-mustard py-4 rounded-xl items-center border-b-4 border-[#d49232]"
+            >
+              <Text className="font-heading text-espresso text-base">Simpan & Sinkronisasi</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
