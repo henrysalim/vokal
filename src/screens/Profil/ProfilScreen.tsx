@@ -1,22 +1,46 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { User, Bell, Settings, CircleHelp, Shield, LogOut, ChevronRight } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, FadeInDown } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
 import { MOCK_USER } from '../../data/mock';
 import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../../context/auth';
 
 export default function ProfilScreen() {
   const [isLansiaMode, setIsLansiaMode] = useState(false);
   const spin = useSharedValue(0);
   const { levelName } = useUser();
+  const { signOut } = useAuth();
+  const navigation = useNavigation<any>();
 
   React.useEffect(() => {
     spin.value = withRepeat(withTiming(360, { duration: 10000, easing: Easing.linear }), -1, false);
   }, []);
 
   const animatedSpin = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value}deg` }] }));
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Keluar Akun',
+      'Apakah Anda yakin ingin keluar dari VOKAL?',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Keluar',
+          style: 'destructive',
+          onPress: () => {
+            signOut();
+            if (navigation && navigation.navigate) {
+              navigation.navigate('Login');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
@@ -67,21 +91,21 @@ export default function ProfilScreen() {
               { icon: <Settings color="#3E2E22" size={20} />, title: 'Pengaturan Suara' },
             ].map((item, index) => (
               <TouchableOpacity activeOpacity={0.7} key={index} className={`flex-row items-center justify-between p-4 ${index !== 2 ? 'border-b border-espresso/5' : ''}`}>
-              <View className="flex-row items-center gap-3">
-                <View className="w-10 h-10 rounded-full bg-cream items-center justify-center">
-                  {item.icon}
+                <View className="flex-row items-center gap-3">
+                  <View className="w-10 h-10 rounded-full bg-cream items-center justify-center">
+                    {item.icon}
+                  </View>
+                  <Text className="font-heading text-espresso text-sm">{item.title}</Text>
                 </View>
-                <Text className="font-heading text-espresso text-sm">{item.title}</Text>
-              </View>
-              <ChevronRight color="#3E2E22" size={16} opacity={0.3} />
-            </TouchableOpacity>
-          ))}
-        </View>
+                <ChevronRight color="#3E2E22" size={16} opacity={0.3} />
+              </TouchableOpacity>
+            ))}
+          </View>
         </Animated.View>
 
         {/* ABOUT & LOGOUT */}
         <View className="gap-2 mb-6">
-          <TouchableOpacity className="bg-surface rounded-2xl p-4 flex-row items-center gap-3 border border-espresso/5">
+          <TouchableOpacity className="bg-[#FFFFFF] rounded-2xl p-4 flex-row items-center gap-3 border border-espresso/5">
             <CircleHelp color="#74822F" size={20} />
             <View className="flex-1">
               <Text className="font-heading text-espresso text-sm mb-0.5">Tentang VOKAL</Text>
@@ -89,7 +113,11 @@ export default function ProfilScreen() {
             </View>
           </TouchableOpacity>
           
-          <TouchableOpacity className="bg-warning/10 rounded-2xl p-4 flex-row items-center justify-center gap-2 border border-warning/20 mt-2">
+          <TouchableOpacity
+            onPress={handleLogout}
+            activeOpacity={0.8}
+            className="bg-warning/10 rounded-2xl p-4 flex-row items-center justify-center gap-2 border border-warning/20 mt-2"
+          >
             <LogOut color="#7A2E28" size={18} />
             <Text className="font-heading text-warning text-sm">Keluar Akun</Text>
           </TouchableOpacity>

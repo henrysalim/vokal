@@ -2,10 +2,11 @@
  * AuthContext — VOKAL dummy auth state
  *
  * Provides minimal auth/onboarding state for the app shell.
- * No backend calls are made here. When Supabase is set up, replace
- * signInWithEmail() / signInWithGoogle() bodies with real SDK calls.
+ * Demo credentials:
+ * Email: vokal@vokal.com
+ * Password: vokal
  */
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useState } from 'react';
 import { Alert } from 'react-native';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -22,8 +23,8 @@ type AuthContextValue = {
   isLoading: boolean;
   isOnboarded: boolean;
   signInWithGoogle: () => Promise<void>;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
-  signUpWithEmail: (name: string, email: string, password: string) => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<boolean>;
+  signUpWithEmail: (name: string, email: string, password: string) => Promise<boolean>;
   signUpWithGoogle: () => Promise<void>;
   signOut: () => void;
   completeOnboarding: () => void;
@@ -36,16 +37,14 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  // In a real app, persist this in AsyncStorage or SecureStore
   const [isOnboarded, setIsOnboarded] = useState(false);
 
   // ── Dummy sign-in helpers ─────────────────────────────────────────────────
 
   const signInWithGoogle = useCallback(async () => {
-    // TODO: Replace with real Supabase Google OAuth when backend is ready
     Alert.alert(
       'Google Sign-In',
-      'Google OAuth akan dihubungkan ke Supabase setelah setup backend. Untuk demo, masuk sebagai pengguna dummy.',
+      'Google OAuth akan dihubungkan ke Supabase setelah setup backend. Masuk sebagai pengguna demo?',
       [
         { text: 'Batal', style: 'cancel' },
         {
@@ -54,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser({
               id: 'google-dummy-001',
               name: 'Demo Pengguna',
-              email: 'demo@vokal.app',
+              email: 'vokal@vokal.com',
               avatarInitials: 'DP',
             });
           },
@@ -63,38 +62,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
-  const signInWithEmail = useCallback(async (email: string, password: string) => {
-    if (!email || !password) {
+  const signInWithEmail = useCallback(async (emailInput: string, passwordInput: string): Promise<boolean> => {
+    const cleanEmail = emailInput.trim().toLowerCase();
+    const cleanPassword = passwordInput.trim();
+
+    if (!cleanEmail || !cleanPassword) {
       Alert.alert('Error', 'Email dan kata sandi wajib diisi.');
-      return;
+      return false;
     }
+
     setIsLoading(true);
     try {
-      // TODO: Replace with Supabase auth.signInWithPassword({ email, password })
-      await new Promise((r) => setTimeout(r, 800)); // Simulate network
-      const namePart = email.split('@')[0];
-      const initials = namePart.slice(0, 2).toUpperCase();
-      setUser({
-        id: `email-user-${Date.now()}`,
-        name: namePart,
-        email,
-        avatarInitials: initials,
-      });
+      await new Promise((r) => setTimeout(r, 500)); // Simulate network
+
+      if (cleanEmail === 'vokal@vokal.com' && cleanPassword === 'vokal') {
+        setUser({
+          id: 'vokal-user-001',
+          name: 'VOKAL User',
+          email: 'vokal@vokal.com',
+          avatarInitials: 'VU',
+        });
+        return true;
+      } else {
+        Alert.alert(
+          'Gagal Masuk',
+          'Email atau kata sandi salah.\n\nKredensial Demo:\nEmail: vokal@vokal.com\nKata Sandi: vokal'
+        );
+        return false;
+      }
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   const signUpWithEmail = useCallback(
-    async (name: string, email: string, password: string) => {
+    async (name: string, email: string, password: string): Promise<boolean> => {
       if (!name || !email || !password) {
         Alert.alert('Error', 'Semua kolom wajib diisi.');
-        return;
+        return false;
       }
       setIsLoading(true);
       try {
-        // TODO: Replace with Supabase auth.signUp({ email, password, options: { data: { name } } })
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 500));
         const initials = name
           .split(' ')
           .map((w) => w[0])
@@ -102,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .slice(0, 2)
           .toUpperCase();
         setUser({ id: `email-user-${Date.now()}`, name, email, avatarInitials: initials });
+        return true;
       } finally {
         setIsLoading(false);
       }
@@ -110,7 +120,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const signUpWithGoogle = useCallback(async () => {
-    // Reuse same Google stub
     await signInWithGoogle();
   }, [signInWithGoogle]);
 
@@ -119,7 +128,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const completeOnboarding = useCallback(() => {
-    // TODO: Persist with AsyncStorage.setItem('vokal_onboarded', '1')
     setIsOnboarded(true);
   }, []);
 
