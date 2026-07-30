@@ -36,27 +36,22 @@ All styling is done with **NativeWind** (`className` props), not `StyleSheet.cre
 
 ## 4. Color tokens (`tailwind.config.js`)
 
-Warm, earthy, wellness-app palette — cream base with mustard as the hero accent, terracotta and olive as supporting accents, and a near-black anchor color for high-contrast text. No blue, no navy, no cold "cybersecurity" tones. **Every hex below is sampled directly, pixel-for-pixel, from the reference screenshot** (not an approximation), so this is the exact palette to reproduce.
+Warm, earthy, wellness-app palette — cream base with mustard as the hero accent, terracotta and olive as supporting accents, and a deep espresso brown as the anchor/dark color. No blue, no navy, no cold "cybersecurity" tones.
 
 | Token | Hex | Use |
 |---|---|---|
-| `espresso` | `#1A1512` | Anchor dark color — headers on colored cards, primary buttons/text on light backgrounds, bottom-nav icons, high-contrast surfaces. Sampled from the reference's heading text and nav icons — it reads as near-black, not chocolate-brown — `bg-espresso` / `text-espresso` |
-| `mustard` | `#F5BE4E` | Hero accent — primary CTAs, the center FAB, progress-track highlights. Sampled from the reference's FAB and selected day-chip — `bg-mustard` / `text-mustard` |
-| `mustard-soft` | `#F6CC6A` | Lighter tint used specifically for hero/highlight card fills (e.g. today's codeword card) — a paler, softer version of `mustard`, sampled from the reference's "Let's start your day" hero card. Don't substitute plain `mustard` here; the reference genuinely uses two distinct shades — `bg-mustard-soft` |
-| `terracotta` | `#C1592E` | Secondary accent — secondary buttons, active tags/icons. Not present as a bold solid anywhere in the reference screenshot, so this stays as the existing VOKAL brand choice — `bg-terracotta` / `text-terracotta` |
-| `rose` | `#EFD4CF` | Pastel card-fill color for quick-action cards (e.g. "Cek Suara Ini" card). Sampled from the reference's "Pause & reflect" card — use as a full card background, not an opacity tint — `bg-rose` |
-| `lavender` | `#DFD9FC` | Pastel card-fill color for quick-action cards. Sampled from the reference's "Set Intentions" card — pairs with `rose` and `taupe` for the rotating quick-action row — `bg-lavender` |
-| `taupe` | `#CFC5BA` | Muted secondary panel color (e.g. a collapsed/secondary tab or side panel). Sampled from the reference's "Evening" side tab — `bg-taupe` |
-| `olive` | `#74822F` | Tertiary accent, and the **verified / safe / calm** semantic color ("suara asli terverifikasi"). Not present in the reference screenshot, so this stays as the existing VOKAL brand choice — `bg-olive` / `text-olive` |
-| `cream` | `#DEDADA` | Default app/screen background. Sampled from the reference — it's a cool warm-grey, notably less yellow/tan than a typical "cream" — `bg-cream` |
-| `surface` | `#FFFFFF` | Card surface used for contrast against `cream` (e.g. the risk-meter card, journal-style content cards, white pill tags). Confirmed exact match against the reference — `bg-surface` |
-| `text-muted` | `#6E5751` | Secondary/supporting text — a warm grey-brown, never a cold grey. Sampled from the reference's "Today" labels — `text-text-muted` |
-| `warning` | `#7A2E28` | **High-risk / suspicious-call** state only — a deep brick/maroon that stays inside the warm palette family but reads as serious. Not present in the reference (it has no error/danger state to sample), so this stays as the existing VOKAL brand choice. Reserve strictly for the risk-detection UI and the Cooling-off Timer; never use for general chrome — `bg-warning` / `text-warning` |
+| `espresso` | `#3E2E22` | Anchor dark color — headers on colored cards, primary buttons/text on light backgrounds, bottom-nav icons, high-contrast surfaces (replaces the old "navy" role) — `bg-espresso` / `text-espresso` |
+| `mustard` | `#E8A33D` | Hero accent — primary CTAs, the center FAB, hero/highlight cards (e.g. today's codeword card), progress-track highlights — `bg-mustard` / `text-mustard` |
+| `terracotta` | `#C1592E` | Secondary accent — secondary buttons, active tags/icons, one of the rotating card colors in quick-action grids — `bg-terracotta` / `text-terracotta` |
+| `olive` | `#74822F` | Tertiary accent, and the **verified / safe / calm** semantic color ("suara asli terverifikasi") — `bg-olive` / `text-olive` |
+| `cream` | `#F0EAE0` | Default app/screen background — `bg-cream` |
+| `surface` | `#FFFFFF` | Card surface used for contrast against `cream` (e.g. the risk-meter card, journal-style content cards) — `bg-surface` |
+| `text-muted` | `#6B5F52` | Secondary/supporting text — a warm grey-brown, never a cold grey — `text-text-muted` |
+| `warning` | `#7A2E28` | **High-risk / suspicious-call** state only — a deep brick/maroon that stays inside the warm palette family but reads as serious. Reserve strictly for the risk-detection UI and the Cooling-off Timer; never use for general chrome — `bg-warning` / `text-warning` |
 
 Guidance on use:
-- `mustard` is the app's "star" color — used generously for primary CTAs and highlight cards, the way it's used for the FAB and day-selector in the reference style. It is not a sparing accent the way gold was in earlier versions of this palette. Use `mustard-soft` specifically for hero card *fills* and `mustard` for FABs, buttons, and selected-state chips — the reference does not use them interchangeably.
-- For the quick-action card row (§6, §8), use `rose`, `lavender`, and `taupe` as solid full-card fills — this is a literal, exact match to the reference's "Pause & reflect" / "Set Intentions" / "Evening" cards, replacing any earlier opacity-tint approach (`bg-terracotta/10` etc.) for that specific pattern.
-- Because `mustard`, `mustard-soft`, `terracotta`, `rose`, `lavender`, and `taupe` are all light-to-mid brightness, don't put small body text directly on them in a clashing color — pair with `espresso` (near-black) or white text on solid fills, and reserve `mustard`/`terracotta` as *text* color only for larger headings on `cream`/`surface` backgrounds (check contrast per §11).
+- `mustard` is the app's "star" color — used generously for primary CTAs and highlight cards, the way it's used for the hero card and main button in the reference style. It is not a sparing accent the way gold was in earlier versions of this palette.
+- Because `mustard` and `terracotta` are mid-brightness, don't put small body text directly on them — pair with `espresso` or white text on a solid `mustard`/`terracotta`/`espresso` fill, and reserve `mustard`/`terracotta` as *text* color only for larger headings on `cream`/`surface` backgrounds (check contrast per §11).
 - `warning` (brick/maroon) must stay visually distinct from `terracotta` — don't let a risk-alert accidentally read as just "another accent color."
 
 ## 5. Typography
@@ -74,7 +69,7 @@ Guidance on use:
 - **Content cards**: `rounded-2xl` (soft shadow `shadow-md` at rest), `bg-surface` on a `bg-cream` screen — mirrors the white-card-on-warm-background pattern from the reference.
 - **Primary CTA buttons**: fully rounded pills (`rounded-full`), generous horizontal padding (`px-8 py-4`), solid `bg-mustard` or `bg-espresso` fill with bold white/espresso text — not the more conservative `rounded-2xl` button used for secondary/tertiary actions.
 - **Hero/highlight cards** (e.g. "Codeword Hari Ini", a featured Akademi VOKAL module): large `rounded-3xl` card with a solid or softly-illustrated `mustard` background, big friendly headline, and an optional simple illustration — same role as the "Let's start your day" hero card in the reference.
-- **Quick-action grid**: a horizontal row/grid of small cards in rotating solid pastel fills (`rose`, `lavender`, `taupe`, and `mustard-soft`) for shortcuts like "Cek Suara Ini", "Atur Codeword", "Latihan Keluarga" — an exact match to the "Pause & reflect" / "Set Intentions" quick-journal card row, using the same flat pastel fills rather than opacity tints of the bold accent colors.
+- **Quick-action grid**: a horizontal row/grid of small cards in rotating warm tints (`mustard`, `terracotta`, soft olive tint, soft espresso tint) for shortcuts like "Cek Suara Ini", "Atur Codeword", "Latihan Keluarga" — mirrors the "Pause & reflect" / "Set Intentions" quick-journal card row.
 - Primary actions anchor near the bottom of the screen (thumb zone), not just in a top app bar.
 - **Bottom navigation**: a rounded pill/floating tab bar with 4 standard destinations (Home, Akademi VOKAL, Keluarga, Profil) plus a raised circular **mustard FAB** in the center for the single most important action, "Cek Suara Ini" — directly mirroring the center "+" FAB pattern in the reference navigation bar. Not a hamburger drawer — this needs to be fast and obvious for less tech-savvy users.
 - **Circular day/date selector**: a horizontal row of circular day chips (like a weekly calendar strip) with the selected day filled in `mustard` — reuse this pattern for the Akademi VOKAL daily-streak view and the "codeword rotates today" indicator.
@@ -102,7 +97,7 @@ Guidance on use:
 - **Risk meter (Incoming Call screen):** a horizontal or vertical pill-bar from `olive` (asli/genuine) to `warning` (kemungkinan sintetis tinggi), driven by sample/mock states per CLAUDE.md §5 unless real inference is wired up — always show a small "Simulasi — data contoh" label when using mock data.
 - **Progress track (Akademi VOKAL levels, onboarding steps):** horizontal on wide screens, vertical stack on standard phone width, connected by a thin line, each node a circle with an icon or number, current node highlighted with `bg-mustard`.
 - **Badge/lencana:** small rounded-shield icon, `mustard` or `terracotta` accent, used only inside Akademi VOKAL so it keeps its "reward" meaning — don't reuse the badge visual for anything else.
-- **Quick-action card:** small rounded (`rounded-2xl`) card, solid `rose` / `lavender` / `taupe` / `mustard-soft` background (rotating), bold short title in `espresso`, icon top-right, used in horizontal-scroll rows on Home — direct, exact-color equivalent of the reference's "Pause & reflect" / "Set Intentions" cards.
+- **Quick-action card:** small rounded (`rounded-2xl`) card, solid warm-tint background, bold short title, icon top-right, used in horizontal-scroll rows on Home — direct equivalent of the reference's "Pause & reflect" / "Set Intentions" cards.
 - **Circular day/date chip:** small circle, `text-muted` label above, filled `bg-mustard` + white text when selected/today, outlined/neutral otherwise.
 - **Cooling-off Timer interstitial:** full-screen modal, warm-but-serious tone (not panicked), large countdown using the big-stat-number style in `warning` or `espresso`, one clear primary pill-button action ("Tarik napas, saya akan hubungi ulang").
 - **Accordion:** simple expand/collapse with a rotating chevron, used for FAQ/help content only.
