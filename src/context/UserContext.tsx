@@ -14,9 +14,12 @@ type UserContextType = {
   levelName: string;
   lives: number;
   leaderboard: LeaderboardEntry[];
+  codeword: { word: string; expiresInHours: number };
+  familySecret: string;
   addXP: (amount: number) => void;
   reduceLife: () => void;
   resetLives: () => void;
+  updateFamilySecret: (secret: string) => void;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -25,6 +28,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [xp, setXp] = useState(MOCK_USER.xp);
   const [lives, setLives] = useState(3);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(LEADERBOARD);
+  const [codeword, setCodeword] = useState({ word: 'MEMUAT...', expiresInHours: 6 });
+  const [familySecret, setFamilySecret] = useState("VOKAL_SEC_SANTOSO_99X");
+
+  useEffect(() => {
+    // Generate TOTP codeword saat aplikasi dibuka atau familySecret berubah
+    import('../utils/totp').then(({ generateCodeword }) => {
+      generateCodeword(familySecret, 6).then(result => {
+        setCodeword({ word: result.codeword, expiresInHours: result.expiresInHours });
+      });
+    });
+  }, [familySecret]);
 
   // Derive level from XP based on LEVELS array
   const currentLevelInfo = LEVELS.slice().reverse().find(l => xp >= l.minXP) || LEVELS[0];
@@ -64,8 +78,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setLives(3);
   };
 
+  const updateFamilySecret = (secret: string) => {
+    if(secret.trim().length > 0) {
+      setFamilySecret(secret);
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ xp, level, levelName, lives, leaderboard, addXP, reduceLife, resetLives }}>
+    <UserContext.Provider value={{ xp, level, levelName, lives, leaderboard, codeword, familySecret, addXP, reduceLife, resetLives, updateFamilySecret }}>
       {children}
     </UserContext.Provider>
   );
