@@ -8,11 +8,19 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold, PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans';
 import { DMSans_400Regular, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
 import { Home, GraduationCap, Users, User } from 'lucide-react-native';
+
 import HomeScreen from './src/screens/Home/HomeScreen';
 import AkademiScreen from './src/screens/Akademi/AkademiScreen';
 import CekSuaraScreen from './src/screens/CekSuara/CekSuaraScreen';
 import KeluargaScreen from './src/screens/Keluarga/KeluargaScreen';
 import ProfilScreen from './src/screens/Profil/ProfilScreen';
+import OnboardingScreen from './src/screens/Onboarding/OnboardingScreen';
+import LoginScreen from './src/screens/Auth/LoginScreen';
+import RegisterScreen from './src/screens/Auth/RegisterScreen';
+
+import { UserProvider } from './src/context/UserContext';
+import { AuthProvider, useAuth } from './context/auth';
+import { ScamProvider } from './src/context/ScamContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -55,14 +63,14 @@ function TabNavigator() {
         name="Beranda" 
         component={HomeScreen} 
         options={{
-          tabBarIcon: ({ color, size }) => <Home color={color} size={22} />,
+          tabBarIcon: ({ color }) => <Home color={color} size={22} />,
         }}
       />
       <Tab.Screen 
         name="Akademi" 
         component={AkademiScreen} 
         options={{
-          tabBarIcon: ({ color, size }) => <GraduationCap color={color} size={22} />,
+          tabBarIcon: ({ color }) => <GraduationCap color={color} size={22} />,
         }}
       />
       <Tab.Screen 
@@ -97,22 +105,50 @@ function TabNavigator() {
         name="Keluarga" 
         component={KeluargaScreen} 
         options={{
-          tabBarIcon: ({ color, size }) => <Users color={color} size={22} />,
+          tabBarIcon: ({ color }) => <Users color={color} size={22} />,
         }}
       />
       <Tab.Screen 
         name="Profil" 
         component={ProfilScreen} 
         options={{
-          tabBarIcon: ({ color, size }) => <User color={color} size={22} />,
+          tabBarIcon: ({ color }) => <User color={color} size={22} />,
         }}
       />
     </Tab.Navigator>
   );
 }
 
-import { UserProvider } from './src/context/UserContext';
-import { ScamProvider } from './src/context/ScamContext';
+function MainNavigator() {
+  const { user, isOnboarded } = useAuth();
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!isOnboarded ? (
+        <>
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Root" component={TabNavigator} />
+        </>
+      ) : !user ? (
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+          <Stack.Screen name="Root" component={TabNavigator} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="Root" component={TabNavigator} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
@@ -134,16 +170,16 @@ export default function App() {
   }
 
   return (
-    <UserProvider>
-      <ScamProvider>
-        <View style={{ flex: 1, backgroundColor: '#F0EAE0' }} onLayout={onLayoutRootView}>
-          <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="Root" component={TabNavigator} />
-            </Stack.Navigator>
-          </NavigationContainer>
-        </View>
-      </ScamProvider>
-    </UserProvider>
+    <AuthProvider>
+      <UserProvider>
+        <ScamProvider>
+          <View style={{ flex: 1, backgroundColor: '#F0EAE0' }} onLayout={onLayoutRootView}>
+            <NavigationContainer>
+              <MainNavigator />
+            </NavigationContainer>
+          </View>
+        </ScamProvider>
+      </UserProvider>
+    </AuthProvider>
   );
 }
