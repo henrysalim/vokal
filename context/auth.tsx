@@ -2,9 +2,8 @@
  * AuthContext — VOKAL dummy auth state
  *
  * Provides minimal auth/onboarding state for the app shell.
- * Demo credentials:
- * Email: vokal@vokal.com
- * Password: vokal
+ * Provides minimal auth/onboarding state for the app shell.
+ * (Demo mode: accepts any validly formatted email/password)
  */
 import React, { createContext, useCallback, useContext, useState } from 'react';
 import { Alert } from 'react-native';
@@ -75,18 +74,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await new Promise((r) => setTimeout(r, 500)); // Simulate network
 
-      if (cleanEmail === 'vokal@vokal.com' && cleanPassword === 'vokal') {
+      // Demo mode: accept any email with '@' and password length >= 3
+      if (cleanEmail.includes('@') && cleanPassword.length >= 3) {
         setUser({
           id: 'vokal-user-001',
           name: 'VOKAL User',
-          email: 'vokal@vokal.com',
-          avatarInitials: 'VU',
+          email: cleanEmail,
+          avatarInitials: cleanEmail.substring(0, 2).toUpperCase(),
         });
         return true;
       } else {
         Alert.alert(
           'Gagal Masuk',
-          'Email atau kata sandi salah.\n\nKredensial Demo:\nEmail: vokal@vokal.com\nKata Sandi: vokal'
+          'Pastikan format email benar dan kata sandi minimal 3 karakter untuk mode Demo.'
         );
         return false;
       }
