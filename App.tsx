@@ -112,6 +112,7 @@ function TabNavigator() {
 }
 
 import { UserProvider } from './src/context/UserContext';
+import { ScamProvider } from './src/context/ScamContext';
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
@@ -134,13 +135,15 @@ export default function App() {
 
   return (
     <UserProvider>
-      <View style={{ flex: 1, backgroundColor: '#F0EAE0' }} onLayout={onLayoutRootView}>
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="Root" component={TabNavigator} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </View>
+      <ScamProvider>
+        <View style={{ flex: 1, backgroundColor: '#F0EAE0' }} onLayout={onLayoutRootView}>
+          <NavigationContainer>
+            <Stack.Navigator screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="Root" component={TabNavigator} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </View>
+      </ScamProvider>
     </UserProvider>
   );
 }

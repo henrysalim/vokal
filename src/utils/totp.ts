@@ -1,13 +1,25 @@
 import * as Crypto from 'expo-crypto';
 
 const NOUNS = [
-  'SINGA', 'ELANG', 'HARIMAU', 'GARUDA', 'GAJAH', 
-  'KUDA', 'NAGA', 'BERUANG', 'SERIGALA', 'HIU'
+  'PINTU', 'MEJA', 'KURSI', 'LEMARI', 'KASUR', 'KULKAS', 'BANTAL', 'PIRING',
+  'SENDOK', 'GARPU', 'MANGKUK', 'GELAS', 'SAPU', 'EMBER', 'GAYUNG', 'HANDUK',
+  'SABUN', 'SIKAT', 'BUKU', 'PENSIL', 'TAS', 'SEPATU', 'TOPI', 'BAJU',
+  'CELANA', 'KACAMATA', 'PAYUNG', 'KIPAS', 'LAMPU', 'KUNCI', 'RUMAH', 'MOBIL',
+  'MOTOR', 'SEPEDA', 'KERETA', 'KAPAL', 'PESAWAT', 'GUNUNG', 'LAUT', 'SUNGAI',
+  'DANAU', 'POHON', 'BUNGA', 'DAUN', 'BATU', 'PASIR', 'TANAH', 'LANGIT',
+  'AWAN', 'BINTANG', 'BULAN', 'MATAHARI', 'ANGIN', 'API', 'AIR', 'HUJAN',
+  'PETIR', 'PELANGI', 'SALJU', 'KUCING', 'ANJING', 'AYAM', 'BURUNG', 'IKAN'
 ];
 
 const ADJECTIVES = [
-  'EMAS', 'BIRU', 'MERAH', 'PUTIH', 'HITAM', 
-  'CEPAT', 'KUAT', 'BERANI', 'HEBAT', 'API'
+  'MERAH', 'KUNING', 'HIJAU', 'BIRU', 'PUTIH', 'HITAM', 'ABU', 'COKLAT',
+  'PANAS', 'DINGIN', 'HANGAT', 'SEJUK', 'KERING', 'BASAH', 'BESAR', 'KECIL',
+  'PANJANG', 'PENDEK', 'TINGGI', 'RENDAH', 'BERAT', 'RINGAN', 'CEPAT', 'LAMBAT',
+  'KUAT', 'LEMAH', 'KERAS', 'LUNAK', 'TAJAM', 'TUMPUL', 'KASAR', 'HALUS',
+  'TERANG', 'GELAP', 'BERSIH', 'KOTOR', 'WANGI', 'BAU', 'MANIS', 'ASAM',
+  'ASIN', 'PAHIT', 'PEDAS', 'GURIH', 'LEZAT', 'SEGAR', 'LAYU', 'MUDA',
+  'TUA', 'BARU', 'LAMA', 'MAHAL', 'MURAH', 'KAYA', 'MISKIN', 'PINTAR',
+  'BODOH', 'RAJIN', 'MALAS', 'BERANI', 'TAKUT', 'SENANG', 'SEDIH', 'MARAH'
 ];
 
 /**
@@ -46,5 +58,5 @@ export async function generateCodeword(secretKey: string, hoursWindow: number = 
 
   const codeword = `${NOUNS[nounIndex]} ${ADJECTIVES[adjIndex]}`;
 
-  return { codeword, expiresInHours };
+  return { codeword, expiresInHours, hashHex };
 }

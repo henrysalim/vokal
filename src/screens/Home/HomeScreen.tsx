@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Flame, Bell, ShieldCheck, ChevronRight, Lock } from 'lucide-react-native';
+import { Home, Shield, Bell, ChevronRight, PlayCircle, Fingerprint, Lock, Flame, ShieldCheck } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import VokalMascot from '../../components/Mascot';
 import { MOCK_CODEWORD, QUICK_ACTIONS, MOCK_USER } from '../../data/mock';
 import { useUser } from '../../context/UserContext';
+import RadarModus from '../../components/ui/RadarModus';
 
 const DAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const TODAY_IDX = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
@@ -105,6 +106,9 @@ export default function HomeScreen() {
                   <ShieldCheck color="#74822F" size={10} />
                   <Text className="text-olive text-[8px] font-bold uppercase tracking-wider">Secured by Blockchain</Text>
                 </View>
+                <Text className="text-espresso/40 text-[10px] font-display mt-2" numberOfLines={1}>
+                  Hash: 0x{codeword.hash ? codeword.hash.substring(0, 20) : '000000'}...
+                </Text>
               </View>
               <View className="bg-espresso/5 rounded-2xl p-3 items-center">
                 <Text className="text-espresso font-display text-2xl">{codeword.expiresInHours}</Text>
@@ -163,6 +167,9 @@ export default function HomeScreen() {
             ))}
           </View>
         </View>
+
+        {/* RADAR MODUS LOKAL */}
+        <RadarModus />
 
         {/* AKADEMI VOKAL (MINI) */}
         <View className="mt-6 bg-surface rounded-[24px] p-5 shadow-sm">
