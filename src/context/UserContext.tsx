@@ -14,7 +14,7 @@ type UserContextType = {
   levelName: string;
   lives: number;
   leaderboard: LeaderboardEntry[];
-  codeword: { word: string; expiresInHours: number };
+  codeword: { word: string; expiresInHours: number; hash: string };
   familySecret: string;
   addXP: (amount: number) => void;
   reduceLife: () => void;
@@ -28,14 +28,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [xp, setXp] = useState(MOCK_USER.xp);
   const [lives, setLives] = useState(3);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(LEADERBOARD);
-  const [codeword, setCodeword] = useState({ word: 'MEMUAT...', expiresInHours: 6 });
+  const [codeword, setCodeword] = useState({ word: 'MEMUAT...', expiresInHours: 6, hash: '0x00000000' });
   const [familySecret, setFamilySecret] = useState("VOKAL_SEC_SANTOSO_99X");
 
   useEffect(() => {
     // Generate TOTP codeword saat aplikasi dibuka atau familySecret berubah
     import('../utils/totp').then(({ generateCodeword }) => {
       generateCodeword(familySecret, 6).then(result => {
-        setCodeword({ word: result.codeword, expiresInHours: result.expiresInHours });
+        setCodeword({ word: result.codeword, expiresInHours: result.expiresInHours, hash: result.hashHex });
       });
     });
   }, [familySecret]);
