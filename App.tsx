@@ -21,6 +21,7 @@ import RegisterScreen from './src/screens/Auth/RegisterScreen';
 import { UserProvider } from './src/context/UserContext';
 import { AuthProvider, useAuth } from './context/auth';
 import { ScamProvider } from './src/context/ScamContext';
+import { ConfirmModalProvider } from './src/components/ui/ConfirmModal';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -173,11 +174,13 @@ export default function App() {
     <AuthProvider>
       <UserProvider>
         <ScamProvider>
-          <View style={{ flex: 1, backgroundColor: '#F0EAE0' }} onLayout={onLayoutRootView}>
-            <NavigationContainer>
-              <MainNavigator />
-            </NavigationContainer>
-          </View>
+          <ConfirmModalProvider>
+            <View style={{ flex: 1, backgroundColor: '#F0EAE0' }} onLayout={onLayoutRootView}>
+              <NavigationContainer>
+                <MainNavigator />
+              </NavigationContainer>
+            </View>
+          </ConfirmModalProvider>
         </ScamProvider>
       </UserProvider>
     </AuthProvider>

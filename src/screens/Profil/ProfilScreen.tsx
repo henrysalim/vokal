@@ -8,12 +8,14 @@ import { useNavigation } from '@react-navigation/native';
 import { MOCK_USER } from '../../data/mock';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../../context/auth';
+import { useConfirmModal } from '../../components/ui/ConfirmModal';
 
 export default function ProfilScreen() {
   const [isLansiaMode, setIsLansiaMode] = useState(false);
   const spin = useSharedValue(0);
   const { levelName } = useUser();
   const { signOut } = useAuth();
+  const { showConfirm } = useConfirmModal();
   const navigation = useNavigation<any>();
 
   React.useEffect(() => {
@@ -23,23 +25,20 @@ export default function ProfilScreen() {
   const animatedSpin = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value}deg` }] }));
 
   const handleLogout = () => {
-    Alert.alert(
-      'Keluar Akun',
-      'Apakah Anda yakin ingin keluar dari VOKAL?',
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Keluar',
-          style: 'destructive',
-          onPress: () => {
-            signOut();
-            if (navigation && navigation.navigate) {
-              navigation.navigate('Login');
-            }
-          },
-        },
-      ]
-    );
+    showConfirm({
+      title: 'Keluar Akun',
+      message: 'Apakah Anda yakin ingin keluar dari VOKAL?',
+      confirmText: 'Ya, Keluar',
+      cancelText: 'Batal',
+      variant: 'terracotta',
+      iconType: 'warning',
+      onConfirm: () => {
+        signOut();
+        if (navigation && navigation.navigate) {
+          navigation.navigate('Login');
+        }
+      },
+    });
   };
 
   return (

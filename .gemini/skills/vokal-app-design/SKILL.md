@@ -105,6 +105,7 @@ Guidance on use:
 - **Quick-action card:** small rounded (`rounded-2xl`) card, solid `rose` / `lavender` / `taupe` / `mustard-soft` background (rotating), bold short title in `espresso`, icon top-right, used in horizontal-scroll rows on Home — direct, exact-color equivalent of the reference's "Pause & reflect" / "Set Intentions" cards.
 - **Circular day/date chip:** small circle, `text-muted` label above, filled `bg-mustard` + white text when selected/today, outlined/neutral otherwise.
 - **Cooling-off Timer interstitial:** full-screen modal, warm-but-serious tone (not panicked), large countdown using the big-stat-number style in `warning` or `espresso`, one clear primary pill-button action ("Tarik napas, saya akan hubungi ulang").
+- **Custom Global Confirm Modal (`ConfirmModal`):** Reusable custom modal dialog component (`src/components/ui/ConfirmModal.tsx`) replacing OS native `Alert.alert`. Features smooth Reanimated zoom/backdrop transitions, 5 color variants (`mustard`, `terracotta`, `olive`, `espresso`, `info`), preset icons (`share`, `warning`, `danger`, `success`, `info`, `question`), and global invocation via the `useConfirmModal()` hook and `ConfirmModalProvider`.
 - **Accordion:** simple expand/collapse with a rotating chevron, used for FAQ/help content only.
 
 ## 9. Copy guidelines
