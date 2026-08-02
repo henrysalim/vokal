@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "VOKAL memerlukan izin mikrofon untuk memindai sinyal vokal dan mendeteksi indikasi penipuan AI."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -18,6 +21,10 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "RECORD_AUDIO",
+        "READ_CONTACTS"
+      ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -27,6 +34,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "VOKAL memerlukan izin mikrofon untuk memindai sinyal vokal dan mendeteksi indikasi penipuan AI."
+        }
+      ],
       [
         "expo-splash-screen",
         {

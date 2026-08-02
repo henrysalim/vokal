@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Mic, ShieldAlert, ShieldCheck, Activity, Phone, AlertOctagon, HeartPulse, X } from 'lucide-react-native';
+import { Mic, ShieldAlert, ShieldCheck, Activity, Phone, AlertOctagon, HeartPulse, X, Cloud, CloudOff, Zap } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, withSequence, FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-av';
 import { FAMILY_MEMBERS } from '../../data/mock';
+import { analyzeLocalDSP, DspAnalysisResult } from '../../utils/audioAnalyzer';
+import { API_CONFIG } from '../../utils/config';
 
 type ScanState = 'idle' | 'recording' | 'analyzing' | 'result';
 
@@ -13,8 +15,14 @@ export default function CekSuaraScreen() {
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [showPanicMode, setShowPanicMode] = useState(false);
   const [countdown, setCountdown] = useState(60);
-  const [aiScore, setAiScore] = useState(0);
-  
+
+  // Analysis States
+  const [dspResult, setDspResult] = useState<DspAnalysisResult | null>(null);
+  const [cloudScore, setCloudScore] = useState<number | null>(null);
+  const [isOfflineMode, setIsOfflineMode] = useState(false);
+  const [isCloudScanning, setIsCloudScanning] = useState(false);
+  const [finalCombinedScore, setFinalCombinedScore] = useState(0);
+
   const pulse = useSharedValue(1);
   const breathPulse = useSharedValue(1);
 
@@ -41,7 +49,7 @@ export default function CekSuaraScreen() {
         -1,
         true
       );
-      
+
       const timer = setInterval(() => {
         setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
       }, 1000);
@@ -66,8 +74,12 @@ export default function CekSuaraScreen() {
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
       });
-      
+
       setScanState('recording');
+      setDspResult(null);
+      setCloudScore(null);
+      setIsOfflineMode(false);
+
       const meteringData: number[] = [];
 
       const { recording } = await Audio.Recording.createAsync(
@@ -80,170 +92,152 @@ export default function CekSuaraScreen() {
         100 // Update interval 100ms
       );
 
-      // Record for 5 seconds for better DSP data
+      // Record for 5 seconds for optimal DSP sampling
       setTimeout(async () => {
         await recording.stopAndUnloadAsync();
+        const recordingUri = recording.getURI();
         setScanState('analyzing');
-        
-        try {
-          // ==========================================
-          // LIGHTWEIGHT DSP MODEL (Pure JS)
-          // Rule-based Acoustic Analyzer
-          // ==========================================
-          
-          if (meteringData.length < 20) {
-            setAiScore(85.5); // Fallback if data is too short
-          } else {
-            // 1. Calculate Standard Deviation (Volume Variance)
-            let sum = 0;
-            meteringData.forEach(m => sum += m);
-            const mean = sum / meteringData.length;
-            
-            let squaredDiffSum = 0;
-            meteringData.forEach(m => {
-              squaredDiffSum += Math.pow(m - mean, 2);
+
+        // ==========================================
+        // PHASE 1: INSTANT LOCAL DSP ANALYZER (Pure JS, 0ms Latency)
+        // ==========================================
+        const localDsp = analyzeLocalDSP(meteringData);
+        setDspResult(localDsp);
+
+        // ==========================================
+        // PHASE 2: CLOUD AI ESCALATION & OFFLINE FALLBACK
+        // ==========================================
+        setIsCloudScanning(true);
+        let cloudProbability: number | null = null;
+
+        if (recordingUri) {
+          try {
+            const formData = new FormData();
+            formData.append('audio', {
+              uri: recordingUri,
+              type: 'audio/m4a',
+              name: 'recording.m4a',
+            } as any);
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT_MS);
+
+            const response = await fetch(`${API_CONFIG.BASE_URL}/api/scan`, {
+              method: 'POST',
+              body: formData,
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
+              signal: controller.signal,
             });
-            const stdDev = Math.sqrt(squaredDiffSum / meteringData.length);
-            
-            // 2. Silence Gap Detection (Jeda Napas)
-            const SILENCE_THRESHOLD = -45; // Below -45dB is considered silence/ambient
-            let silenceFrames = 0;
-            let totalSilenceGaps = 0;
-            
-            for (let i = 0; i < meteringData.length; i++) {
-              if (meteringData[i] < SILENCE_THRESHOLD) {
-                silenceFrames++;
-              } else {
-                if (silenceFrames >= 3) { // 3 frames * 100ms = 300ms gap (typical breath)
-                  totalSilenceGaps++;
-                }
-                silenceFrames = 0;
+
+            clearTimeout(timeoutId);
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data && typeof data.ai_probability === 'number') {
+                cloudProbability = data.ai_probability;
+                setCloudScore(cloudProbability);
               }
+            } else {
+              setIsOfflineMode(true);
             }
-            
-            // 3. Energy Peaks (Syllable rhythm)
-            let peaks = 0;
-            for (let i = 1; i < meteringData.length - 1; i++) {
-              if (meteringData[i] > meteringData[i-1] && meteringData[i] > meteringData[i+1] && meteringData[i] > -30) {
-                peaks++;
-              }
-            }
-
-            // --- Deterministic Threshold-Based Scoring ---
-            // Asumsi dasar: Suara manusia (Innocent until proven guilty)
-            let baseScore = 18.0; 
-            
-            // Hitung rata-rata energi (Volume) untuk mendeteksi teriakan/tekanan
-            const avgVolume = meteringData.reduce((acc, val) => acc + val, 0) / meteringData.length;
-
-            // 1. Deteksi Tekanan Volume (Aggression/Yelling)
-            if (avgVolume > -20) {
-              baseScore += 25; // Volume tinggi secara rata-rata (Menekan korban)
-            }
-            
-            // 2. Deteksi Urgensi / Ketergesaan (Pacing & Silence)
-            if (totalSilenceGaps === 0) {
-              baseScore += 35; // Bicara merest rentetan tanpa napas / Mesin
-            } else if (totalSilenceGaps <= 2 && peaks >= 8) {
-              baseScore += 30; // Sedikit napas tapi jumlah silabel banyak = Sangat Tergesa-gesa / Mendesak
-            }
-            
-            // 3. Deteksi Monoton (Robot) vs Chaos (Game/Bising)
-            if (stdDev < 8) {
-              baseScore += 20; // Terlalu datar (TTS/AI lama)
-            } else if (stdDev > 25 && peaks > 12) {
-              baseScore += 25; // Bising berlebih (Bukan percakapan normal)
-            }
-            
-            // 4. Syllable Rhythm (Kepanikan)
-            if (peaks > 10) {
-              baseScore += 20; // Bicara sangat cepat (Taktik panic penipu)
-            } else if (peaks < 2) {
-              baseScore += 15; // Dengungan / Tidak ada kata
-            }
-
-            // Clamp and add subtle decimal variance for UI realism
-            let finalScore = baseScore + (meteringData.length % 7) * 0.3;
-            if (finalScore > 98.7) finalScore = 98.7;
-            if (finalScore < 4.2) finalScore = 4.2;
-            
-            setAiScore(parseFloat(finalScore.toFixed(1)));
+          } catch (error) {
+            console.log('⚠️ Server Cloud AI offline/unreachable. Falling back to On-Device DSP.');
+            setIsOfflineMode(true);
+          } finally {
+            setIsCloudScanning(false);
           }
-        } catch (error) {
-          console.error("DSP Error:", error);
-          setAiScore(99.9);
+        } else {
+          setIsOfflineMode(true);
+          setIsCloudScanning(false);
         }
 
-        // Simulate complex processing delay for UX
-        setTimeout(() => {
-          setScanState('result');
-        }, 2000);
-      }, 10000);
+        // ==========================================
+        // PHASE 3: COMBINED HYBRID RISK SCORE
+        // ==========================================
+        let finalScore = localDsp.urgencyScore;
+        if (cloudProbability !== null) {
+          // Weighted Hybrid: 40% Local DSP Urgency + 60% Cloud Spectral AI
+          finalScore = (localDsp.urgencyScore * 0.4) + (cloudProbability * 0.6);
+        }
+
+        setFinalCombinedScore(parseFloat(finalScore.toFixed(1)));
+        setScanState('result');
+
+      }, 5000);
 
     } catch (err) {
       console.error('Failed to start recording', err);
       Alert.alert('Error', 'Gagal mengakses mikrofon.');
+      setScanState('idle');
     }
   };
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
-        
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+
         {/* HEADER */}
-        <View className="mb-8">
-          <Text className="text-3xl font-heading text-espresso">Audio Risk Toolkit</Text>
-          <Text className="text-sm font-body text-text-muted mt-2 leading-relaxed">
-            Pindai suara panggilan secara langsung menggunakan DSP (Digital Signal Processing) untuk mendeteksi pola tekanan psikologis, urgensi bicara, dan anomali sinyal suara yang khas pada modus penipuan.
+        <View className="mb-6">
+          <View className="flex-row items-center justify-between mb-1">
+            <Text className="text-3xl font-heading text-espresso">Audio Risk Toolkit</Text>
+            <View className="flex-row items-center gap-1 bg-mustard/20 px-3 py-1 rounded-full border border-mustard/40">
+              <Zap color="#E8A33D" size={12} />
+              <Text className="text-mustard font-bold text-[10px] uppercase tracking-wider">Engine Hybrid</Text>
+            </View>
+          </View>
+          <Text className="text-xs font-body text-text-muted leading-relaxed">
+            Deteksi 2-lapis: DSP On-Device (0ms latensi) memindai pola tekanan vokal, dilanjutkan Verifikasi Spektral Cloud AI.
           </Text>
         </View>
 
         {/* INTERACTIVE SCAN AREA */}
-        <View className="items-center mb-10 mt-4">
-          <View className="relative items-center justify-center h-48 w-48">
+        <View className="items-center mb-8 mt-2">
+          <View className="relative items-center justify-center h-44 w-44">
             {(scanState === 'recording' || scanState === 'analyzing') && (
               <>
                 <Animated.View className="absolute w-40 h-40 rounded-full border border-mustard/50 bg-mustard/20" style={animatedPulse} />
                 <Animated.View className="absolute w-56 h-56 rounded-full border border-mustard/20 bg-mustard/5" style={[animatedPulse, { animationDelay: '200ms' }]} />
               </>
             )}
-            
-            <TouchableOpacity 
-              activeOpacity={0.9} 
+
+            <TouchableOpacity
+              activeOpacity={0.9}
               onPress={scanState === 'idle' ? startScan : undefined}
-              className="w-32 h-32 rounded-full items-center justify-center shadow-lg absolute" 
+              className="w-32 h-32 rounded-full items-center justify-center shadow-lg absolute"
               style={{ elevation: 8, shadowColor: scanState === 'idle' ? '#E8A33D' : '#74822F', shadowOpacity: 0.4, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16 }}
             >
-              <LinearGradient 
-                colors={scanState === 'idle' ? ['#E8A33D', '#C1592E'] : scanState === 'recording' ? ['#C1592E', '#7A2E28'] : ['#74822F', '#4A5320']} 
+              <LinearGradient
+                colors={scanState === 'idle' ? ['#E8A33D', '#C1592E'] : scanState === 'recording' ? ['#C1592E', '#7A2E28'] : ['#74822F', '#4A5320']}
                 className="w-full h-full rounded-full items-center justify-center"
               >
-                {scanState === 'idle' && <Mic color="#FFFFFF" size={48} />}
-                {scanState === 'recording' && <Activity color="#FFFFFF" size={48} />}
-                {scanState === 'analyzing' && <ShieldCheck color="#FFFFFF" size={48} />}
-                {scanState === 'result' && <AlertOctagon color="#FFFFFF" size={48} />}
+                {scanState === 'idle' && <Mic color="#FFFFFF" size={44} />}
+                {scanState === 'recording' && <Activity color="#FFFFFF" size={44} />}
+                {scanState === 'analyzing' && <ShieldCheck color="#FFFFFF" size={44} />}
+                {scanState === 'result' && <AlertOctagon color="#FFFFFF" size={44} />}
               </LinearGradient>
             </TouchableOpacity>
           </View>
 
-          <View className="mt-8 items-center h-20">
+          <View className="mt-6 items-center h-16">
             {scanState === 'idle' && (
-              <Animated.Text entering={FadeIn} className="text-espresso text-lg font-heading text-center">Tekan untuk Merekam Live</Animated.Text>
+              <Animated.Text entering={FadeIn} className="text-espresso text-base font-heading text-center">Tekan untuk Merekam Live</Animated.Text>
             )}
             {scanState === 'recording' && (
               <Animated.View entering={FadeIn} className="items-center">
-                <Text className="text-terracotta text-lg font-heading text-center">Merekam Percakapan...</Text>
-                <Text className="text-text-muted text-xs font-body mt-1">Menganalisis frekuensi mikrofon</Text>
+                <Text className="text-terracotta text-base font-heading text-center">Merekam Percakapan (5s)...</Text>
+                <Text className="text-text-muted text-xs font-body mt-0.5">Memproses sinyal amplitudo mikrofon</Text>
               </Animated.View>
             )}
             {scanState === 'analyzing' && (
               <Animated.View entering={FadeIn} className="items-center">
-                <Text className="text-olive text-lg font-heading text-center">Mengekstrak Fitur Akustik...</Text>
-                <Text className="text-text-muted text-xs font-body text-center mt-1">Menganalisis pola tekanan bicara (Speech Pressure Pattern)</Text>
+                <Text className="text-olive text-base font-heading text-center">Memproses Pipeline Hybrid...</Text>
+                <Text className="text-text-muted text-xs font-body text-center mt-0.5">DSP On-Device ⚡ & Spektral Cloud ☁️</Text>
               </Animated.View>
             )}
             {scanState === 'result' && (
-              <Animated.Text entering={FadeIn} className="text-warning text-lg font-heading text-center">Analisis Selesai!</Animated.Text>
+              <Animated.Text entering={FadeIn} className="text-espresso text-base font-heading text-center">Hasil Pemindaian Selesai</Animated.Text>
             )}
           </View>
         </View>
@@ -251,71 +245,131 @@ export default function CekSuaraScreen() {
         {/* RESULTS SECTION */}
         {scanState === 'result' && (
           <Animated.View entering={FadeInDown.springify()}>
-            {aiScore >= 60 ? (
-              <View className="w-full bg-warning/10 rounded-[24px] p-6 shadow-sm border-2 border-warning/30 mb-6">
-                
-                {/* SINGLE STAT VIEW */}
-                <View className="items-center mb-6 bg-white/50 p-4 rounded-2xl border border-warning/10">
-                  <Text className="text-4xl font-display text-warning">{aiScore}%</Text>
-                  <Text className="text-warning text-sm font-heading mt-1 text-center uppercase tracking-wider">Indikasi Tekanan Psikologis / Anomali</Text>
+            
+            {/* OVERALL RISK BANNER */}
+            {finalCombinedScore >= 60 ? (
+              <View className="w-full bg-warning/10 rounded-[24px] p-5 shadow-sm border-2 border-warning/30 mb-5">
+                <View className="items-center mb-4 bg-white/60 p-4 rounded-2xl border border-warning/10">
+                  <Text className="text-4xl font-display text-warning">{finalCombinedScore}%</Text>
+                  <Text className="text-warning text-xs font-heading mt-1 text-center uppercase tracking-wider">Tingkat Risiko Scam / Kloning AI</Text>
                 </View>
 
-                <View className="flex-row items-center gap-3 mb-4">
-                  <View className="bg-warning/20 p-3 rounded-full">
-                    <ShieldAlert color="#7A2E28" size={32} />
+                <View className="flex-row items-center gap-3 mb-3">
+                  <View className="bg-warning/20 p-2.5 rounded-full">
+                    <ShieldAlert color="#7A2E28" size={26} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-warning text-lg font-heading leading-tight">Terdeteksi Pola Mencurigakan</Text>
+                    <Text className="text-warning text-base font-heading leading-tight">Terdeteksi Pola Mencurigakan</Text>
+                    <Text className="text-espresso/70 text-xs font-body mt-0.5">Suara menunjukkan anomali psikologis / sintetis.</Text>
                   </View>
                 </View>
 
-                <Text className="font-body text-espresso text-sm leading-relaxed mb-4">
-                  <Text className="font-bold text-warning">BAHAYA:</Text> Pola bicara penelepon terdeteksi sangat tergesa-gesa, monoton, atau memiliki anomali akustik (minim jeda napas alami). Ini adalah taktik psikologis atau rekaman sintetis yang sangat umum dalam penipuan!
-                </Text>
-                
-                <View className="bg-warning p-4 rounded-xl items-center mb-2">
-                  <Text className="text-white font-heading text-lg text-center uppercase tracking-wider">WASPADA SCAM / JANGAN TRANSFER</Text>
+                <View className="bg-warning p-3.5 rounded-xl items-center">
+                  <Text className="text-white font-heading text-sm uppercase tracking-wider">WASPADA SCAM / JANGAN TRANSFER</Text>
                 </View>
               </View>
             ) : (
-              <View className="w-full bg-olive/10 rounded-[24px] p-6 shadow-sm border-2 border-olive/30 mb-6">
-                
-                {/* SINGLE STAT VIEW */}
-                <View className="items-center mb-6 bg-white/50 p-4 rounded-2xl border border-olive/10">
-                  <Text className="text-4xl font-display text-olive">{(100 - aiScore).toFixed(1)}%</Text>
-                  <Text className="text-olive text-sm font-heading mt-1 text-center uppercase tracking-wider">Tingkat Kewajaran Suara</Text>
+              <View className="w-full bg-olive/10 rounded-[24px] p-5 shadow-sm border-2 border-olive/30 mb-5">
+                <View className="items-center mb-4 bg-white/60 p-4 rounded-2xl border border-olive/10">
+                  <Text className="text-4xl font-display text-olive">{(100 - finalCombinedScore).toFixed(1)}%</Text>
+                  <Text className="text-olive text-xs font-heading mt-1 text-center uppercase tracking-wider">Tingkat Kewajaran Vokal</Text>
                 </View>
 
-                <View className="flex-row items-center gap-3 mb-4">
-                  <View className="bg-olive/20 p-3 rounded-full">
-                    <ShieldCheck color="#74822F" size={32} />
+                <View className="flex-row items-center gap-3 mb-3">
+                  <View className="bg-olive/20 p-2.5 rounded-full">
+                    <ShieldCheck color="#74822F" size={26} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-olive text-lg font-heading leading-tight">Pola Bicara Natural</Text>
+                    <Text className="text-olive text-base font-heading leading-tight">Pola Bicara Natural</Text>
+                    <Text className="text-espresso/70 text-xs font-body mt-0.5">Tidak ada indikasi urgensi tergesa-gesa atau anomali bot.</Text>
                   </View>
                 </View>
 
-                <Text className="font-body text-espresso text-sm leading-relaxed mb-4">
-                  <Text className="font-bold text-olive">AMAN:</Text> Suara ini memiliki pola vokal, jeda napas, dan variansi dinamis yang normal tanpa indikasi tekanan tergesa-gesa (urgensi).
-                </Text>
-                
-                <View className="bg-olive p-4 rounded-xl items-center mb-2">
-                  <Text className="text-white font-heading text-lg text-center uppercase tracking-wider">TIDAK ADA INDIKASI TEKANAN</Text>
+                <View className="bg-olive p-3.5 rounded-xl items-center">
+                  <Text className="text-white font-heading text-sm uppercase tracking-wider">AMAN — TIDAK ADA INDIKASI SCAM</Text>
                 </View>
               </View>
             )}
 
-            {aiScore >= 60 && (
+            {/* DUAL LAYER BREAKDOWN CARDS */}
+            <Text className="text-espresso font-heading text-sm mb-3">Rincian Analisis Hybrid Layer:</Text>
+            
+            <View className="gap-3 mb-5">
+              
+              {/* LAYER 1: ON-DEVICE DSP CARD */}
+              <View className="bg-surface rounded-2xl p-4 border border-espresso/10 shadow-sm flex-row items-center justify-between">
+                <View className="flex-row items-center gap-3 flex-1 pr-2">
+                  <View className="w-10 h-10 rounded-full bg-mustard/20 items-center justify-center">
+                    <Zap color="#E8A33D" size={20} />
+                  </View>
+                  <View className="flex-1">
+                    <View className="flex-row items-center gap-2">
+                      <Text className="font-heading text-espresso text-xs">Lapis 1: DSP On-Device</Text>
+                      <View className="bg-olive/20 px-2 py-0.5 rounded-md">
+                        <Text className="text-olive text-[9px] font-bold">0ms INSTAN</Text>
+                      </View>
+                    </View>
+                    <Text className="font-body text-text-muted text-[11px] mt-0.5">
+                      Urgent Score: <Text className="font-bold text-espresso">{dspResult?.urgencyScore}%</Text> • Jeda Napas: <Text className="font-bold text-espresso">{dspResult?.silenceGaps}x</Text>
+                    </Text>
+                  </View>
+                </View>
+                <Text className={`font-display text-sm ${dspResult && dspResult.isHighUrgency ? 'text-warning' : 'text-olive'}`}>
+                  {dspResult?.urgencyScore}%
+                </Text>
+              </View>
+
+              {/* LAYER 2: CLOUD AI SPECTRAL CARD */}
+              <View className="bg-surface rounded-2xl p-4 border border-espresso/10 shadow-sm flex-row items-center justify-between">
+                <View className="flex-row items-center gap-3 flex-1 pr-2">
+                  <View className={`w-10 h-10 rounded-full ${isOfflineMode ? 'bg-espresso/10' : 'bg-terracotta/20'} items-center justify-center`}>
+                    {isOfflineMode ? <CloudOff color="#3E2E22" size={20} opacity={0.6} /> : <Cloud color="#C1592E" size={20} />}
+                  </View>
+                  <View className="flex-1">
+                    <View className="flex-row items-center gap-2">
+                      <Text className="font-heading text-espresso text-xs">Lapis 2: Spektral Cloud AI</Text>
+                      {isOfflineMode ? (
+                        <View className="bg-espresso/10 px-2 py-0.5 rounded-md">
+                          <Text className="text-espresso/60 text-[9px] font-bold">MODE OFFLINE</Text>
+                        </View>
+                      ) : (
+                        <View className="bg-mustard/20 px-2 py-0.5 rounded-md">
+                          <Text className="text-mustard text-[9px] font-bold">TERHUBUNG</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text className="font-body text-text-muted text-[11px] mt-0.5">
+                      {isOfflineMode 
+                        ? 'Sinyal terbatas. Memakai proteksi lokal.' 
+                        : cloudScore !== null 
+                        ? `Probabilitas AI: ${cloudScore}%`
+                        : 'Memproses spektral vokal...'}
+                    </Text>
+                  </View>
+                </View>
+                {cloudScore !== null ? (
+                  <Text className={`font-display text-sm ${cloudScore >= 60 ? 'text-warning' : 'text-olive'}`}>
+                    {cloudScore}%
+                  </Text>
+                ) : (
+                  <Text className="font-body text-espresso/40 text-xs">—</Text>
+                )}
+              </View>
+
+            </View>
+
+            {/* PANIC MODE SHORTCUT */}
+            {finalCombinedScore >= 60 && (
               <TouchableOpacity 
                 activeOpacity={0.9} 
                 onPress={() => setShowPanicMode(true)}
-                className="bg-espresso rounded-2xl py-5 px-6 flex-row items-center justify-between"
+                className="bg-espresso rounded-2xl py-4 px-5 flex-row items-center justify-between mb-4 shadow-sm"
               >
-                <View className="flex-row items-center gap-4">
-                  <HeartPulse color="#E8A33D" size={28} />
+                <View className="flex-row items-center gap-3">
+                  <HeartPulse color="#E8A33D" size={24} />
                   <View>
-                    <Text className="text-cream font-heading text-base">Mulai Panik?</Text>
-                    <Text className="text-cream/70 font-body text-xs mt-1">Tekan ini untuk menenangkan diri</Text>
+                    <Text className="text-cream font-heading text-sm">Mulai Panik?</Text>
+                    <Text className="text-cream/70 font-body text-xs mt-0.5">Aktifkan Mode Tenang untuk rileks</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -324,10 +378,11 @@ export default function CekSuaraScreen() {
             <TouchableOpacity 
               activeOpacity={0.8}
               onPress={() => setScanState('idle')}
-              className="mt-6 py-3 items-center"
+              className="mt-2 py-3 items-center"
             >
-              <Text className="text-text-muted font-heading text-sm">Pindai Ulang</Text>
+              <Text className="text-text-muted font-heading text-xs">Pindai Ulang</Text>
             </TouchableOpacity>
+
           </Animated.View>
         )}
 
@@ -341,10 +396,10 @@ export default function CekSuaraScreen() {
               <X color="#FFFFFF" size={24} />
             </TouchableOpacity>
           </View>
-          
+
           <View className="items-center justify-center flex-1">
             <Text className="text-white text-3xl font-heading mb-12 text-center">Jangan Panik.</Text>
-            
+
             <View className="relative items-center justify-center w-64 h-64 mb-16">
               <Animated.View className="absolute w-56 h-56 rounded-full border-4 border-olive/30 bg-olive/10" style={animatedBreath} />
               <Animated.View className="absolute w-40 h-40 rounded-full border-4 border-olive/50 bg-olive/20" style={[animatedBreath, { animationDelay: '200ms' }]} />
