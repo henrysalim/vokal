@@ -1,11 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, FlatList, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, TouchableOpacity, FlatList, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { ShieldCheck, PhoneCall, HeartHandshake, ArrowRight, Lock } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../context/auth';
 import VokalMascot from '../../components/Mascot';
+import { AppText } from '../../components/ui/AppText';
 
 const { width } = Dimensions.get('window');
 
@@ -84,7 +85,7 @@ export default function OnboardingScreen() {
           <View className="w-8 h-8 rounded-full bg-mustard items-center justify-center border border-espresso/20">
             <ShieldCheck color="#3E2E22" size={18} />
           </View>
-          <Text className="font-heading text-lg text-espresso tracking-widest">VOKAL</Text>
+          <AppText size="lg" className="font-heading text-espresso tracking-widest">VOKAL</AppText>
         </View>
 
         {!isLast ? (
@@ -93,7 +94,7 @@ export default function OnboardingScreen() {
             activeOpacity={0.7}
             className="px-4 py-1.5 rounded-full bg-espresso/5 border border-espresso/10"
           >
-            <Text className="font-heading text-xs text-espresso">Lewati</Text>
+            <AppText size="xs" className="font-heading text-espresso">Lewati</AppText>
           </TouchableOpacity>
         ) : (
           <View className="w-16" />
@@ -126,12 +127,12 @@ export default function OnboardingScreen() {
               <View className="bg-surface rounded-[24px] p-6 shadow-sm border border-espresso/5 w-full items-center">
                 <View className="flex-row items-center gap-2 mb-2 bg-mustard/20 px-3 py-1 rounded-full border border-mustard/30">
                   {item.icon}
-                  <Text className="font-display text-xs text-espresso tracking-wider">{item.badge}</Text>
+                  <AppText size="xs" className="font-display text-espresso tracking-wider">{item.badge}</AppText>
                 </View>
-                <Text className="font-heading text-xl text-espresso text-center mb-2">{item.title}</Text>
-                <Text className="font-body text-text-muted text-xs text-center leading-relaxed px-2">
+                <AppText size="xl" className="font-heading text-espresso text-center mb-2">{item.title}</AppText>
+                <AppText size="xs" className="font-body text-text-muted text-center leading-relaxed px-2">
                   {item.desc}
-                </Text>
+                </AppText>
               </View>
             </View>
           )}
@@ -156,9 +157,9 @@ export default function OnboardingScreen() {
           onPress={handleNext}
           className="w-full bg-mustard py-4 rounded-2xl items-center border-b-4 border-[#d49232] shadow-sm flex-row justify-center gap-2 mb-3"
         >
-          <Text className="font-heading text-espresso text-base">
+          <AppText size="base" className="font-heading text-espresso">
             {isLast ? 'Mulai Sekarang' : 'Lanjut'}
-          </Text>
+          </AppText>
           <ArrowRight color="#3E2E22" size={18} />
         </TouchableOpacity>
 
@@ -168,9 +169,9 @@ export default function OnboardingScreen() {
           className="items-center py-2"
           activeOpacity={0.7}
         >
-          <Text className="font-body text-text-muted text-xs">
-            Sudah punya akun? <Text className="font-heading text-espresso underline">Masuk di sini</Text>
-          </Text>
+          <AppText size="xs" className="font-body text-text-muted">
+            Sudah punya akun? <AppText size="xs" className="font-heading text-espresso underline">Masuk di sini</AppText>
+          </AppText>
         </TouchableOpacity>
       </View>
 

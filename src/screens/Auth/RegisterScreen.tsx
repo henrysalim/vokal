@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, ChevronLeft } from 'lucide-react-native';
@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../context/auth';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import VokalMascot from '../../components/Mascot';
+import { AppText } from '../../components/ui/AppText';
 
 export default function RegisterScreen() {
   const { signUpWithEmail, signUpWithGoogle, isLoading } = useAuth();
@@ -87,10 +88,10 @@ export default function RegisterScreen() {
         {/* HEADER AREA */}
         <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center mb-6">
           <VokalMascot size={100} />
-          <Text className="text-espresso font-heading text-3xl text-center mt-2">Daftar Akun VOKAL</Text>
-          <Text className="text-text-muted text-xs font-body text-center mt-1 px-4">
+          <AppText size="3xl" className="text-espresso font-heading text-center mt-2">Daftar Akun VOKAL</AppText>
+          <AppText size="xs" className="text-text-muted font-body text-center mt-1 px-4">
             Bergabunglah dan lindungi keluarga Anda dari kejahatan kloning suara AI.
-          </Text>
+          </AppText>
         </Animated.View>
 
         {/* FORM CARD */}
@@ -103,21 +104,21 @@ export default function RegisterScreen() {
             className="w-full bg-cream border border-espresso/10 border-b-2 border-b-espresso/20 py-3.5 px-4 rounded-2xl flex-row items-center justify-center gap-3 mb-4"
           >
             <View className="w-6 h-6 rounded-full bg-mustard items-center justify-center">
-              <Text className="font-display text-xs text-espresso">G</Text>
+              <AppText size="xs" className="font-display text-espresso">G</AppText>
             </View>
-            <Text className="font-heading text-espresso text-sm">Daftar dengan Google</Text>
+            <AppText size="sm" className="font-heading text-espresso">Daftar dengan Google</AppText>
           </TouchableOpacity>
 
           {/* DIVIDER */}
           <View className="flex-row items-center gap-3 my-3">
             <View className="h-[1px] bg-espresso/10 flex-1" />
-            <Text className="font-body text-text-muted text-[11px] uppercase tracking-wider">atau isi formulir</Text>
+            <AppText size="xs" className="font-body text-text-muted uppercase tracking-wider">atau isi formulir</AppText>
             <View className="h-[1px] bg-espresso/10 flex-1" />
           </View>
 
           {/* FULL NAME INPUT */}
           <View className="mb-4">
-            <Text className="font-heading text-espresso text-xs mb-1.5 uppercase tracking-wider">Nama Lengkap</Text>
+            <AppText size="xs" className="font-heading text-espresso mb-1.5 uppercase tracking-wider">Nama Lengkap</AppText>
             <View className="flex-row items-center bg-cream/70 border border-espresso/10 rounded-2xl px-4 py-3.5">
               <User color="#3E2E22" size={18} />
               <TextInput
@@ -133,7 +134,7 @@ export default function RegisterScreen() {
 
           {/* EMAIL INPUT */}
           <View className="mb-4">
-            <Text className="font-heading text-espresso text-xs mb-1.5 uppercase tracking-wider">Email</Text>
+            <AppText size="xs" className="font-heading text-espresso mb-1.5 uppercase tracking-wider">Email</AppText>
             <View className="flex-row items-center bg-cream/70 border border-espresso/10 rounded-2xl px-4 py-3.5">
               <Mail color="#3E2E22" size={18} />
               <TextInput
@@ -150,7 +151,7 @@ export default function RegisterScreen() {
 
           {/* PASSWORD INPUT */}
           <View className="mb-2">
-            <Text className="font-heading text-espresso text-xs mb-1.5 uppercase tracking-wider">Kata Sandi</Text>
+            <AppText size="xs" className="font-heading text-espresso mb-1.5 uppercase tracking-wider">Kata Sandi</AppText>
             <View className="flex-row items-center bg-cream/70 border border-espresso/10 rounded-2xl px-4 py-3.5">
               <Lock color="#3E2E22" size={18} />
               <TextInput
@@ -179,15 +180,15 @@ export default function RegisterScreen() {
                   />
                 ))}
               </View>
-              <Text className="font-heading text-[11px] text-espresso w-20 text-right">
+              <AppText size="xs" className="font-heading text-espresso w-20 text-right">
                 {strengthLabels[strength]}
-              </Text>
+              </AppText>
             </View>
           )}
 
           {/* CONFIRM PASSWORD INPUT */}
           <View className="mb-4">
-            <Text className="font-heading text-espresso text-xs mb-1.5 uppercase tracking-wider">Konfirmasi Kata Sandi</Text>
+            <AppText size="xs" className="font-heading text-espresso mb-1.5 uppercase tracking-wider">Konfirmasi Kata Sandi</AppText>
             <View className="flex-row items-center bg-cream/70 border border-espresso/10 rounded-2xl px-4 py-3.5">
               <Lock color="#3E2E22" size={18} />
               <TextInput
@@ -205,9 +206,9 @@ export default function RegisterScreen() {
           {/* PRIVACY CARD */}
           <View className="bg-olive/10 border border-olive/20 rounded-2xl p-3.5 flex-row items-start gap-2.5 mb-6">
             <ShieldCheck color="#74822F" size={20} className="mt-0.5" />
-            <Text className="font-body text-text-muted text-[11px] leading-relaxed flex-1">
+            <AppText size="xs" className="font-body text-text-muted leading-relaxed flex-1">
               Dengan mendaftar, Anda menyetujui bahwa data suara tidak pernah dikirim ke server luar. Semua verifikasi berjalan 100% lokal di HP Anda.
-            </Text>
+            </AppText>
           </View>
 
           {/* PRIMARY CTA BUTTON (Duolingo 3D style) */}
@@ -220,7 +221,7 @@ export default function RegisterScreen() {
             {isLoading ? (
               <ActivityIndicator color="#3E2E22" />
             ) : (
-              <Text className="font-heading text-espresso text-base">Daftar Sekarang</Text>
+              <AppText size="base" className="font-heading text-espresso">Daftar Sekarang</AppText>
             )}
           </TouchableOpacity>
 
@@ -230,9 +231,9 @@ export default function RegisterScreen() {
             className="items-center py-2"
             activeOpacity={0.7}
           >
-            <Text className="font-body text-text-muted text-xs">
-              Sudah punya akun? <Text className="font-heading text-espresso underline">Masuk di sini</Text>
-            </Text>
+            <AppText size="xs" className="font-body text-text-muted">
+              Sudah punya akun? <AppText size="xs" className="font-heading text-espresso underline">Masuk di sini</AppText>
+            </AppText>
           </TouchableOpacity>
 
         </Animated.View>

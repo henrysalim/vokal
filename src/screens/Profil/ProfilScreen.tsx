@@ -10,7 +10,7 @@ import {
   User,
 } from "lucide-react-native";
 import React, { useState } from "react";
-import { Image, ScrollView, Switch, Text, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, Switch, TouchableOpacity, View } from "react-native";
 import Animated, {
   Easing,
   FadeInDown,
@@ -23,9 +23,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "../../../context/auth";
 import { useConfirmModal } from "../../components/ui/ConfirmModal";
 import { useUser } from "../../context/UserContext";
+import { useLansia } from "@/src/context/LansiaContext";
+import { AppText } from "@/src/components/ui/AppText";
 
 export default function ProfilScreen() {
-  const [isLansiaMode, setIsLansiaMode] = useState(false);
   const spin = useSharedValue(0);
   const { levelName } = useUser();
   const { user, signOut } = useAuth();
@@ -63,6 +64,8 @@ export default function ProfilScreen() {
 
   const avatarUrl = user?.avatarUrl;
 
+  const { isLansiaMode, toggleLansiaMode } = useLansia();
+
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-cream">
       <ScrollView
@@ -88,19 +91,19 @@ export default function ProfilScreen() {
                   resizeMode="cover"
                 />
               ) : (
-                <Text className="text-3xl text-cream font-display">
+                <AppText size="2xl" className="text-cream font-display">
                   {avatarInitials}
-                </Text>
+                </AppText>
               )}
             </View>
             <View className="absolute bottom-0 right-0 bg-olive w-7 h-7 rounded-full items-center justify-center border-2 border-cream">
               <Shield color="#FFFFFF" size={14} />
             </View>
           </View>
-          <Text className="text-2xl font-heading text-espresso">
+          <AppText size="xl" className="font-heading text-espresso">
             {userName}
-          </Text>
-          <Text className="text-text-muted text-sm font-body">{levelName}</Text>
+          </AppText>
+          <AppText size="sm" className="text-text-muted font-body">{levelName}</AppText>
         </Animated.View>
 
         {/* MODE LANSIA TOGGLE */}
@@ -118,24 +121,19 @@ export default function ProfilScreen() {
             >
               <View className="flex-1 pr-4">
                 <View className="flex-row items-center gap-2 mb-1">
-                  <Text className="font-heading text-espresso text-base">
+                  <AppText size="base" className="font-heading text-espresso">
                     Mode Lansia
-                  </Text>
-                  <View className="bg-mustard px-2 py-0.5 rounded-full">
-                    <Text className="text-espresso text-[9px] font-bold">
-                      REKOMENDASI
-                    </Text>
-                  </View>
+                  </AppText>
                 </View>
-                <Text className="font-body text-text-muted text-[11px] leading-tight">
+                <AppText size="xs" className="font-body text-text-muted leading-tight">
                   Teks lebih besar, panduan suara aktif, dan layout lebih
                   sederhana.
-                </Text>
+                </AppText>
               </View>
               <Switch
                 trackColor={{ false: "#3E2E2220", true: "#E8A33D" }}
                 thumbColor={isLansiaMode ? "#FFFFFF" : "#F0EAE0"}
-                onValueChange={() => setIsLansiaMode(!isLansiaMode)}
+                onValueChange={toggleLansiaMode}
                 value={isLansiaMode}
               />
             </LinearGradient>
@@ -170,9 +168,9 @@ export default function ProfilScreen() {
                   <View className="w-10 h-10 rounded-full bg-cream items-center justify-center">
                     {item.icon}
                   </View>
-                  <Text className="font-heading text-espresso text-sm">
+                  <AppText size="sm" className="font-heading text-espresso">
                     {item.title}
-                  </Text>
+                  </AppText>
                 </View>
                 <ChevronRight color="#3E2E22" size={16} opacity={0.3} />
               </TouchableOpacity>
@@ -185,12 +183,12 @@ export default function ProfilScreen() {
           <TouchableOpacity className="bg-[#FFFFFF] rounded-2xl p-4 flex-row items-center gap-3 border border-espresso/5">
             <CircleHelp color="#74822F" size={20} />
             <View className="flex-1">
-              <Text className="font-heading text-espresso text-sm mb-0.5">
+              <AppText size="sm" className="font-heading text-espresso mb-0.5">
                 Tentang VOKAL
-              </Text>
-              <Text className="font-body text-text-muted text-[10px]">
+              </AppText>
+              <AppText size="xs" className="font-body text-text-muted">
                 Verifikasi Otomatis Kloning Audio Lokal v1.0
-              </Text>
+              </AppText>
             </View>
           </TouchableOpacity>
 
@@ -200,9 +198,9 @@ export default function ProfilScreen() {
             className="bg-warning/10 rounded-2xl p-4 flex-row items-center justify-center gap-2 border border-warning/20 mt-2"
           >
             <LogOut color="#7A2E28" size={18} />
-            <Text className="font-heading text-warning text-sm">
+            <AppText size="sm" className="font-heading text-warning">
               Keluar Akun
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </View>
       </ScrollView>

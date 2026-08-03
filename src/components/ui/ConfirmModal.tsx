@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { View, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import Animated, { FadeIn, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import { AlertTriangle, CheckCircle2, Info, HelpCircle, X, Share2, ShieldAlert } from 'lucide-react-native';
+import { AppText } from './AppText';
 
 export type ConfirmVariant = 'mustard' | 'terracotta' | 'olive' | 'espresso' | 'info';
 
@@ -129,57 +130,59 @@ export function ConfirmModalComponent({
         <Animated.View
           entering={ZoomIn.duration(200).springify()}
           exiting={ZoomOut.duration(150)}
-          className="bg-cream w-full rounded-[32px] overflow-hidden p-6 shadow-2xl border border-espresso/10 max-w-sm"
+          className="bg-cream w-full rounded-[32px] overflow-hidden p-6 shadow-2xl border border-espresso/10 max-w-sm max-h-[85%]"
         >
-          {/* TOP CLOSE BUTTON */}
-          <View className="items-end -mr-2 -mt-2">
-            <TouchableOpacity 
-              onPress={handleCancel} 
-              className="w-8 h-8 rounded-full bg-espresso/5 items-center justify-center"
-            >
-              <X color="#3E2E22" size={16} opacity={0.6} />
-            </TouchableOpacity>
-          </View>
-
-          {/* ICON & TITLE */}
-          <View className="items-center mb-5">
-            <View className={`w-16 h-16 rounded-full ${config.iconBg} items-center justify-center mb-4`}>
-              {renderIcon()}
-            </View>
-            
-            <Text className="font-heading text-xl text-espresso text-center leading-tight">
-              {title}
-            </Text>
-            
-            <Text className="font-body text-xs text-text-muted text-center mt-2 px-2 leading-relaxed">
-              {message}
-            </Text>
-          </View>
-
-          {/* BUTTON ACTIONS */}
-          <View className="gap-2.5 mt-2">
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={handleConfirm}
-              className={`w-full ${config.btnBg} py-3.5 rounded-2xl items-center border-b-4 ${config.btnBorder} shadow-sm`}
-            >
-              <Text className={`font-heading ${config.btnText} text-sm`}>
-                {confirmText}
-              </Text>
-            </TouchableOpacity>
-
-            {cancelText ? (
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={handleCancel}
-                className="w-full bg-surface py-3 rounded-2xl items-center border border-espresso/10"
+          <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+            {/* TOP CLOSE BUTTON */}
+            <View className="items-end -mr-2 -mt-2">
+              <TouchableOpacity 
+                onPress={handleCancel} 
+                className="w-8 h-8 rounded-full bg-espresso/5 items-center justify-center"
               >
-                <Text className="font-heading text-espresso/70 text-xs">
-                  {cancelText}
-                </Text>
+                <X color="#3E2E22" size={16} opacity={0.6} />
               </TouchableOpacity>
-            ) : null}
-          </View>
+            </View>
+
+            {/* ICON & TITLE */}
+            <View className="items-center mb-5">
+              <View className={`w-16 h-16 rounded-full ${config.iconBg} items-center justify-center mb-4`}>
+                {renderIcon()}
+              </View>
+              
+              <AppText size="xl" className="font-heading text-espresso text-center leading-tight">
+                {title}
+              </AppText>
+              
+              <AppText size="xs" className="font-body text-text-muted text-center mt-2 px-2 leading-relaxed">
+                {message}
+              </AppText>
+            </View>
+
+            {/* BUTTON ACTIONS */}
+            <View className="gap-2.5 mt-2">
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={handleConfirm}
+                className={`w-full ${config.btnBg} py-3.5 rounded-2xl items-center border-b-4 ${config.btnBorder} shadow-sm`}
+              >
+                <AppText size="sm" className={`font-heading ${config.btnText}`}>
+                  {confirmText}
+                </AppText>
+              </TouchableOpacity>
+
+              {cancelText ? (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={handleCancel}
+                  className="w-full bg-surface py-3 rounded-2xl items-center border border-espresso/10"
+                >
+                  <AppText size="xs" className="font-heading text-espresso/70">
+                    {cancelText}
+                  </AppText>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </ScrollView>
         </Animated.View>
       </View>
     </Modal>
