@@ -37,8 +37,8 @@ export default function DashboardAnak() {
           {blockedCalls.length === 0 ? (
             <Text className="font-body text-xs text-text-muted text-center py-2 italic">Belum ada aktivitas mencurigakan.</Text>
           ) : (
-            blockedCalls.slice(0, 3).map((call) => (
-              <View key={call.id} className="flex-row gap-3 mb-3 border-b border-espresso/5 pb-2">
+            blockedCalls.slice(0, 3).map((call, idx) => (
+              <View key={`${call.id || 'call'}_${idx}`} className="flex-row gap-3 mb-3 border-b border-espresso/5 pb-2">
                 <View className="bg-warning/20 p-2 rounded-full h-8 w-8 items-center justify-center">
                   <Text className="text-[10px]">📞</Text>
                 </View>

@@ -14,9 +14,12 @@ export default function ProfilScreen() {
   const [isLansiaMode, setIsLansiaMode] = useState(false);
   const spin = useSharedValue(0);
   const { levelName } = useUser();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { showConfirm } = useConfirmModal();
   const navigation = useNavigation<any>();
+
+  const userName = user?.name || 'Pengguna VOKAL';
+  const avatarInitials = user?.avatarInitials || 'VK';
 
   React.useEffect(() => {
     spin.value = withRepeat(withTiming(360, { duration: 10000, easing: Easing.linear }), -1, false);
@@ -50,13 +53,13 @@ export default function ProfilScreen() {
           <View className="relative items-center justify-center mb-4">
             <Animated.View className="absolute w-[100px] h-[100px] rounded-full border-2 border-dashed border-mustard/40" style={animatedSpin} />
             <View className="w-[88px] h-[88px] bg-espresso rounded-full items-center justify-center border-4 border-cream shadow-sm">
-              <Text className="text-3xl text-cream font-display">{MOCK_USER.avatar}</Text>
+              <Text className="text-3xl text-cream font-display">{avatarInitials}</Text>
             </View>
             <View className="absolute bottom-0 right-0 bg-olive w-7 h-7 rounded-full items-center justify-center border-2 border-cream">
               <Shield color="#FFFFFF" size={14} />
             </View>
           </View>
-          <Text className="text-2xl font-heading text-espresso">{MOCK_USER.name}</Text>
+          <Text className="text-2xl font-heading text-espresso">{userName}</Text>
           <Text className="text-text-muted text-sm font-body">{levelName}</Text>
         </Animated.View>
 

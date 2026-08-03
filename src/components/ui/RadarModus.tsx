@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
 import { Radar, AlertTriangle, ShieldCheck, Search, PlusCircle, X, Share2, CheckCircle } from 'lucide-react-native';
-import { useScamContext, ScamReport } from '../../context/ScamContext';
+import { useScamContext, ScamReport, CheckResult } from '../../context/ScamContext';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 
 export default function RadarModus() {
-  const { localScams, reportScam, checkNumber } = useScamContext();
+  const { localScams, reportScam, checkNumberDetails } = useScamContext();
   const [modalVisible, setModalVisible] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
   const [locationInput, setLocationInput] = useState('');
   const [scamType, setScamType] = useState('Kecelakaan Anak');
   
   const [checkInput, setCheckInput] = useState('');
-  const [checkResult, setCheckResult] = useState<'idle' | 'safe' | 'danger'>('idle');
+  const [checkDetails, setCheckDetails] = useState<CheckResult | null>(null);
 
   // Share Card state
   const [showShareCard, setShowShareCard] = useState(false);
@@ -32,8 +32,8 @@ export default function RadarModus() {
     
     await reportScam(phoneInput, scamType, locationInput);
     
-    // Simulate getting the newly created report for the card
-    const prefix = phoneInput.substring(0, 6) + '-xxx';
+    const clean = phoneInput.replace(/[^0-9+]/g, '');
+    const prefix = clean.length > 6 ? clean.substring(0, 6) + '-xxx' : clean + '-xxx';
     setLatestReport({
       id: 'temp',
       phoneHash: '...',
@@ -47,7 +47,6 @@ export default function RadarModus() {
     setPhoneInput('');
     setLocationInput('');
     
-    // Show the shareable card instead of simple alert
     setTimeout(() => setShowShareCard(true), 500);
   };
 
@@ -72,8 +71,8 @@ export default function RadarModus() {
 
   const handleCheck = async () => {
     if (checkInput.length < 8) return;
-    const isScam = await checkNumber(checkInput);
-    setCheckResult(isScam ? 'danger' : 'safe');
+    const res = await checkNumberDetails(checkInput);
+    setCheckDetails(res);
   };
 
   return (
@@ -102,7 +101,7 @@ export default function RadarModus() {
           value={checkInput}
           onChangeText={(t) => {
             setCheckInput(t);
-            setCheckResult('idle');
+            setCheckDetails(null);
           }}
         />
         <TouchableOpacity 
@@ -113,17 +112,26 @@ export default function RadarModus() {
         </TouchableOpacity>
       </View>
 
-      {checkResult === 'danger' && (
-        <View className="bg-warning/20 p-3 rounded-xl mb-4 flex-row items-center gap-2 border border-warning/30">
-          <AlertTriangle color="#7A2E28" size={16} />
-          <Text className="text-warning font-heading text-xs flex-1">BAHAYA: Nomor ini pernah dilaporkan sebagai Scam!</Text>
+      {checkDetails?.isScam && (
+        <View className="bg-warning/20 p-3 rounded-xl mb-4 border border-warning/30">
+          <View className="flex-row items-center gap-2 mb-1">
+            <AlertTriangle color="#7A2E28" size={16} />
+            <Text className="text-warning font-heading text-xs flex-1">
+              BAHAYA: Nomor ini telah terdaftar {checkDetails.totalReports}x sebagai Penipuan!
+            </Text>
+          </View>
+          {checkDetails.matchedReport && (
+            <Text className="text-espresso font-body text-[11px] ml-6">
+              Modus: <Text className="font-bold">{checkDetails.matchedReport.type}</Text> • Area: {checkDetails.matchedReport.location}
+            </Text>
+          )}
         </View>
       )}
       
-      {checkResult === 'safe' && (
+      {checkDetails && !checkDetails.isScam && (
         <View className="bg-olive/20 p-3 rounded-xl mb-4 flex-row items-center gap-2 border border-olive/30">
           <ShieldCheck color="#74822F" size={16} />
-          <Text className="text-olive font-heading text-xs flex-1">Aman: Belum ada laporan untuk nomor ini.</Text>
+          <Text className="text-olive font-heading text-xs flex-1">Aman: Belum ada laporan penipuan untuk nomor ini.</Text>
         </View>
       )}
 
@@ -136,8 +144,8 @@ export default function RadarModus() {
             Belum ada data di lokasimu. Jadilah yang pertama melaporkan untuk melindungi komunitas!
           </Text>
         ) : (
-          localScams.slice(0, 3).map(scam => (
-            <View key={scam.id} className="flex-row items-start gap-2 mb-3 border-b border-espresso/5 pb-2">
+          localScams.slice(0, 3).map((scam, idx) => (
+            <View key={`${scam.id || 'scam'}_${idx}`} className="flex-row items-start gap-2 mb-3 border-b border-espresso/5 pb-2">
               <View className="w-8 h-8 rounded-full bg-warning/20 items-center justify-center">
                 <Text className="text-xs">⚠️</Text>
               </View>
