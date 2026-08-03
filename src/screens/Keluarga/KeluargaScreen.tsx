@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, Share, Alert, ActivityIndicator, FlatList } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Modal, TextInput, Share, Alert, ActivityIndicator, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeOut, FadeInDown, Layout } from 'react-native-reanimated';
@@ -26,6 +26,7 @@ import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../../context/auth';
 import DashboardAnak from '../../components/ui/DashboardAnak';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
+import { AppText } from '../../components/ui/AppText';
 
 type ContactItem = Contacts.Contact & { id?: string };
 
@@ -252,21 +253,21 @@ export default function KeluargaScreen() {
           <TouchableOpacity activeOpacity={0.9} className="rounded-[32px] overflow-hidden mb-6 shadow-sm" style={{ elevation: 2, shadowColor: '#3E2E22', shadowOpacity: 0.2, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12 }}>
             <LinearGradient colors={['#3E2E22', '#5A4634']} className="p-6">
               <View className="flex-row justify-between items-center mb-4">
-                <Text className="text-cream font-heading text-xl">Family Trust Graph</Text>
+                <AppText size="xl" className="text-cream font-heading">Family Trust Graph</AppText>
                 <View className="bg-mustard/20 px-3 py-1 rounded-full">
-                  <Text className="text-mustard text-xs font-display">{familyMembers.length} Anggota</Text>
+                  <AppText size="xs" className="text-mustard font-display">{familyMembers.length} Anggota</AppText>
                 </View>
               </View>
 
               <View className="flex-row justify-between items-center mb-4">
                 <View className="items-center">
-                  <Text className="text-white text-3xl font-display">{codeword.word ? '3' : '0'}/5</Text>
-                  <Text className="text-cream/60 text-[10px] font-body mt-1">Hafal Codeword</Text>
+                  <AppText size="3xl" className="text-white font-display">{codeword.word ? '3' : '0'}/5</AppText>
+                  <AppText size="xs" className="text-cream/60 font-body mt-1">Hafal Codeword</AppText>
                 </View>
                 <View className="w-[1px] h-10 bg-cream/20" />
                 <View className="items-center">
-                  <Text className="text-olive text-3xl font-display">Aman</Text>
-                  <Text className="text-cream/60 text-[10px] font-body mt-1">Status Keamanan</Text>
+                  <AppText size="3xl" className="text-olive font-display">Aman</AppText>
+                  <AppText size="xs" className="text-cream/60 font-body mt-1">Status Keamanan</AppText>
                 </View>
               </View>
 
@@ -282,7 +283,7 @@ export default function KeluargaScreen() {
                   ) : (
                     <>
                       <PlusCircle color="#3E2E22" size={16} />
-                      <Text className="text-espresso font-display text-xs">Undang</Text>
+                      <AppText size="xs" className="text-espresso font-display">Undang</AppText>
                     </>
                   )}
                 </TouchableOpacity>
@@ -295,7 +296,7 @@ export default function KeluargaScreen() {
                   className="flex-1 bg-olive rounded-xl py-3 flex-row justify-center items-center gap-2"
                 >
                   <KeyRound color="#FFFFFF" size={16} />
-                  <Text className="text-white font-display text-xs">Ubah Seed</Text>
+                  <AppText size="xs" className="text-white font-display">Ubah Seed</AppText>
                 </TouchableOpacity>
               </View>
             </LinearGradient>
@@ -304,7 +305,7 @@ export default function KeluargaScreen() {
 
         <Animated.View entering={FadeInDown.delay(200).springify()}>
           <DashboardAnak />
-          <Text className="text-espresso text-base font-heading mb-3">Daftar Anggota</Text>
+          <AppText size="base" className="text-espresso font-heading mb-3">Daftar Anggota</AppText>
         </Animated.View>
 
         {/* LIST KELUARGA */}
@@ -321,16 +322,16 @@ export default function KeluargaScreen() {
                 <TouchableOpacity activeOpacity={0.7} onPress={() => toggleExpand(member.id)} className="p-4 flex-row items-center justify-between">
                   <View className="flex-row items-center gap-3">
                     <View className={`w-12 h-12 rounded-full items-center justify-center border-2 ${isSafe ? 'border-olive bg-olive/10' : isWaiting ? 'border-espresso/20 bg-espresso/5' : 'border-terracotta bg-terracotta/10'}`}>
-                      <Text className={`font-display text-lg ${isSafe ? 'text-olive' : isWaiting ? 'text-espresso/50' : 'text-terracotta'}`}>
+                      <AppText size="lg" className={`font-display ${isSafe ? 'text-olive' : isWaiting ? 'text-espresso/50' : 'text-terracotta'}`}>
                         {member.name.substring(0, 2).toUpperCase()}
-                      </Text>
+                      </AppText>
                     </View>
                     <View>
                       <View className="flex-row items-center gap-2">
-                        <Text className="font-heading text-espresso text-sm">{member.name}</Text>
-                        {isMe && <View className="bg-mustard/20 px-2 py-0.5 rounded-md"><Text className="text-mustard text-[9px] font-display">ADMIN</Text></View>}
+                        <AppText size="sm" className="font-heading text-espresso">{member.name}</AppText>
+                        {isMe && <View className="bg-mustard/20 px-2 py-0.5 rounded-md"><AppText size="xs" className="text-mustard font-display">ADMIN</AppText></View>}
                       </View>
-                      <Text className="font-body text-text-muted text-xs mt-0.5">{member.role}</Text>
+                      <AppText size="xs" className="font-body text-text-muted mt-0.5">{member.role}</AppText>
                     </View>
                   </View>
                   
@@ -342,13 +343,13 @@ export default function KeluargaScreen() {
 
                 {isExpanded && (
                   <Animated.View entering={FadeIn} exiting={FadeOut} className="px-4 pb-4 pt-1 border-t border-espresso/5">
-                    <Text className="text-xs font-body text-text-muted mb-3">Status Codeword: {member.verified ? <Text className="text-olive font-bold">Terverifikasi</Text> : <Text className="text-terracotta font-bold">Belum</Text>}</Text>
+                    <AppText size="xs" className="font-body text-text-muted mb-3">Status Codeword: {member.verified ? <AppText size="xs" className="text-olive font-bold">Terverifikasi</AppText> : <AppText size="xs" className="text-terracotta font-bold">Belum</AppText>}</AppText>
                     
                     {!isMe && (
                       <View className="flex-row gap-2">
                         <TouchableOpacity className="flex-1 bg-terracotta/10 border border-terracotta/30 py-2 rounded-xl items-center flex-row justify-center gap-2">
                           <BellRing color="#C1592E" size={14} />
-                          <Text className="text-terracotta font-display text-[11px]">Kirim Alarm Senyap</Text>
+                          <AppText size="xs" className="text-terracotta font-display">Kirim Alarm Senyap</AppText>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -363,37 +364,39 @@ export default function KeluargaScreen() {
 
       {/* SEED MODAL */}
       <Modal visible={showSeedModal} transparent animationType="fade">
-        <View className="flex-1 bg-espresso/90 justify-center px-5">
-          <View className="bg-cream rounded-3xl p-6">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="font-heading text-lg text-espresso">Kunci Rahasia (Seed)</Text>
-              <TouchableOpacity onPress={() => setShowSeedModal(false)} className="bg-espresso/10 p-2 rounded-full">
-                <X color="#3E2E22" size={16} />
-              </TouchableOpacity>
-            </View>
-            <Text className="font-body text-xs text-text-muted mb-4">
-              Masukkan kalimat unik rahasia keluargamu. Pastikan setiap HP keluarga memasukkan seed yang persis sama agar Codeword TOTP selalu sinkron.
-            </Text>
-            
-            <TextInput
-              className="bg-white border border-espresso/20 rounded-xl p-4 font-body text-espresso mb-4"
-              value={tempSeed}
-              onChangeText={setTempSeed}
-              placeholder="Contoh: KeluargaCemara2026"
-              placeholderTextColor="#A39686"
-              autoCapitalize="none"
-            />
+        <View className="flex-1 bg-espresso/90 justify-center items-center px-5">
+          <View className="bg-cream rounded-3xl p-6 w-full max-h-[85%]">
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+              <View className="flex-row justify-between items-center mb-4">
+                <AppText size="lg" className="font-heading text-espresso">Kunci Rahasia (Seed)</AppText>
+                <TouchableOpacity onPress={() => setShowSeedModal(false)} className="bg-espresso/10 p-2 rounded-full">
+                  <X color="#3E2E22" size={16} />
+                </TouchableOpacity>
+              </View>
+              <AppText size="xs" className="font-body text-text-muted mb-4">
+                Masukkan kalimat unik rahasia keluargamu. Pastikan setiap HP keluarga memasukkan seed yang persis sama agar Codeword TOTP selalu sinkron.
+              </AppText>
+              
+              <TextInput
+                className="bg-white border border-espresso/20 rounded-xl p-4 font-body text-espresso mb-4"
+                value={tempSeed}
+                onChangeText={setTempSeed}
+                placeholder="Contoh: KeluargaCemara2026"
+                placeholderTextColor="#A39686"
+                autoCapitalize="none"
+              />
 
-            <TouchableOpacity 
-              activeOpacity={0.8}
-              onPress={() => {
-                updateFamilySecret(tempSeed);
-                setShowSeedModal(false);
-              }}
-              className="w-full bg-mustard py-4 rounded-xl items-center border-b-4 border-[#d49232]"
-            >
-              <Text className="font-heading text-espresso text-base">Simpan & Sinkronisasi</Text>
-            </TouchableOpacity>
+              <TouchableOpacity 
+                activeOpacity={0.8}
+                onPress={() => {
+                  updateFamilySecret(tempSeed);
+                  setShowSeedModal(false);
+                }}
+                className="w-full bg-mustard py-4 rounded-xl items-center border-b-4 border-[#d49232]"
+              >
+                <AppText size="base" className="font-heading text-espresso">Simpan & Sinkronisasi</AppText>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -407,10 +410,10 @@ export default function KeluargaScreen() {
             <View className="p-5 pb-3 border-b border-espresso/10">
               <View className="flex-row justify-between items-center mb-3">
                 <View>
-                  <Text className="font-heading text-xl text-espresso">Undang Keluarga</Text>
-                  <Text className="font-body text-xs text-text-muted mt-0.5">
+                  <AppText size="xl" className="font-heading text-espresso">Undang Keluarga</AppText>
+                  <AppText size="xs" className="font-body text-text-muted mt-0.5">
                     Filter & pilih kontak HP yang ingin diundang
-                  </Text>
+                  </AppText>
                 </View>
                 <TouchableOpacity onPress={() => setShowContactsModal(false)} className="bg-espresso/10 p-2.5 rounded-full">
                   <X color="#3E2E22" size={18} />
@@ -442,18 +445,18 @@ export default function KeluargaScreen() {
                     onPress={() => setFilterMode('all')}
                     className={`px-3 py-1.5 rounded-full border ${filterMode === 'all' ? 'bg-espresso border-espresso' : 'bg-surface border-espresso/15'}`}
                   >
-                    <Text className={`text-xs font-display ${filterMode === 'all' ? 'text-cream' : 'text-espresso/70'}`}>
+                    <AppText size="xs" className={`font-display ${filterMode === 'all' ? 'text-cream' : 'text-espresso/70'}`}>
                       Semua ({deviceContacts.length})
-                    </Text>
+                    </AppText>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     onPress={() => setFilterMode('uninvited')}
                     className={`px-3 py-1.5 rounded-full border ${filterMode === 'uninvited' ? 'bg-espresso border-espresso' : 'bg-surface border-espresso/15'}`}
                   >
-                    <Text className={`text-xs font-display ${filterMode === 'uninvited' ? 'text-cream' : 'text-espresso/70'}`}>
+                    <AppText size="xs" className={`font-display ${filterMode === 'uninvited' ? 'text-cream' : 'text-espresso/70'}`}>
                       Belum Diundang
-                    </Text>
+                    </AppText>
                   </TouchableOpacity>
                 </View>
 
@@ -463,7 +466,7 @@ export default function KeluargaScreen() {
                     className="flex-row items-center gap-1.5 px-2 py-1 bg-mustard/15 rounded-lg border border-mustard/30"
                   >
                     <CheckSquare size={13} color="#E8A33D" />
-                    <Text className="text-[11px] font-display text-espresso">Pilih Semua</Text>
+                    <AppText size="xs" className="font-display text-espresso">Pilih Semua</AppText>
                   </TouchableOpacity>
                 )}
               </View>
@@ -482,10 +485,10 @@ export default function KeluargaScreen() {
               ListEmptyComponent={
                 <View className="items-center justify-center py-12">
                   <Contact color="#A39686" size={40} opacity={0.5} />
-                  <Text className="font-heading text-base text-espresso mt-3">Kontak tidak ditemukan</Text>
-                  <Text className="font-body text-xs text-text-muted text-center mt-1 px-6">
+                  <AppText size="base" className="font-heading text-espresso mt-3">Kontak tidak ditemukan</AppText>
+                  <AppText size="xs" className="font-body text-text-muted text-center mt-1 px-6">
                     Coba kata kunci pencarian lain atau ganti filter kontak.
-                  </Text>
+                  </AppText>
                 </View>
               }
               ListFooterComponent={<View className="h-24" />}
@@ -524,19 +527,19 @@ export default function KeluargaScreen() {
                       )}
 
                       <View className="w-10 h-10 rounded-full bg-mustard/20 items-center justify-center">
-                        <Text className="font-heading text-espresso text-sm">
+                        <AppText size="sm" className="font-heading text-espresso">
                           {displayName.substring(0, 2).toUpperCase()}
-                        </Text>
+                        </AppText>
                       </View>
                       
                       <View className="flex-1">
-                        <Text className="font-heading text-espresso text-sm" numberOfLines={1}>
+                        <AppText size="sm" className="font-heading text-espresso" numberOfLines={1}>
                           {displayName}
-                        </Text>
+                        </AppText>
                         {contact.phoneNumbers && contact.phoneNumbers.length > 0 && contact.phoneNumbers[0].number && contact.phoneNumbers[0].number !== 'null' && (
-                          <Text className="font-body text-text-muted text-xs mt-0.5" numberOfLines={1}>
+                          <AppText size="xs" className="font-body text-text-muted mt-0.5" numberOfLines={1}>
                             {contact.phoneNumbers[0].number}
-                          </Text>
+                          </AppText>
                         )}
                       </View>
                     </View>
@@ -544,7 +547,7 @@ export default function KeluargaScreen() {
                     {/* PICK / STATUS BUTTON */}
                     {isAlreadyInFamily ? (
                       <View className="bg-espresso/10 px-3 py-1.5 rounded-full">
-                        <Text className="text-espresso/60 font-display text-[10px]">Sudah Ada</Text>
+                        <AppText size="xs" className="text-espresso/60 font-display">Sudah Ada</AppText>
                       </View>
                     ) : (
                       <TouchableOpacity
@@ -553,7 +556,7 @@ export default function KeluargaScreen() {
                         className="bg-mustard px-3.5 py-1.5 rounded-full flex-row items-center gap-1 shadow-sm"
                       >
                         <UserPlus color="#3E2E22" size={13} />
-                        <Text className="text-espresso font-display text-[11px]">Pilih</Text>
+                        <AppText size="xs" className="text-espresso font-display">Pilih</AppText>
                       </TouchableOpacity>
                     )}
                   </TouchableOpacity>
@@ -569,12 +572,12 @@ export default function KeluargaScreen() {
                 className="p-4 bg-surface border-t border-espresso/10 shadow-lg flex-row items-center justify-between"
               >
                 <View>
-                  <Text className="font-heading text-sm text-espresso">
+                  <AppText size="sm" className="font-heading text-espresso">
                     {selectedContactIds.length} Kontak Dipilih
-                  </Text>
-                  <Text className="font-body text-[11px] text-text-muted">
+                  </AppText>
+                  <AppText size="xs" className="font-body text-text-muted">
                     Siap ditambahkan ke jaringan
-                  </Text>
+                  </AppText>
                 </View>
 
                 <TouchableOpacity
@@ -583,9 +586,9 @@ export default function KeluargaScreen() {
                   className="bg-mustard px-5 py-3 rounded-xl flex-row items-center gap-2 border-b-2 border-[#d49232]"
                 >
                   <UserPlus color="#3E2E22" size={16} />
-                  <Text className="font-heading text-espresso text-sm">
+                  <AppText size="sm" className="font-heading text-espresso">
                     Pilih & Undang ({selectedContactIds.length})
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </Animated.View>
             )}

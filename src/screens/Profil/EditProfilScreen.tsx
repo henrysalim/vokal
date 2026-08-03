@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ChevronLeft, User, Mail, CheckCircle2, Camera, Trash2 } from 'lucide-react-native';
@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../../context/auth';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
+import { AppText } from '../../components/ui/AppText';
 
 export default function EditProfilScreen() {
   const navigation = useNavigation();
@@ -95,7 +96,7 @@ export default function EditProfilScreen() {
           >
             <ChevronLeft color="#3E2E22" size={20} />
           </TouchableOpacity>
-          <Text className="font-heading text-lg text-espresso">Edit Profil</Text>
+          <AppText size="lg" className="font-heading text-espresso">Edit Profil</AppText>
           <View className="w-10" />
         </View>
 
@@ -107,7 +108,7 @@ export default function EditProfilScreen() {
                 {avatarUri ? (
                   <Image source={{ uri: avatarUri }} className="w-full h-full" resizeMode="cover" />
                 ) : (
-                  <Text className="text-4xl text-cream font-display">{previewInitials}</Text>
+                  <AppText size="3xl" className="text-cream font-display">{previewInitials}</AppText>
                 )}
               </View>
               {/* Tombol Ikon Kamera */}
@@ -119,12 +120,12 @@ export default function EditProfilScreen() {
 
           <View className="flex-row gap-4 items-center">
             <TouchableOpacity onPress={handlePickImage}>
-              <Text className="text-mustard font-heading text-xs">Ubah Foto</Text>
+              <AppText size="xs" className="text-mustard font-heading">Ubah Foto</AppText>
             </TouchableOpacity>
             {avatarUri && (
               <TouchableOpacity onPress={handleRemoveImage} className="flex-row items-center gap-1">
-                <Trash2 color="#7A2E22" size={12} />
-                <Text className="text-warning font-heading text-xs">Hapus Foto</Text>
+                <Trash2 color="#7A2E28" size={12} />
+                <AppText size="xs" className="text-warning font-heading">Hapus Foto</AppText>
               </TouchableOpacity>
             )}
           </View>
@@ -133,7 +134,7 @@ export default function EditProfilScreen() {
         {/* FORM INPUT */}
         <Animated.View entering={FadeInDown.delay(200).springify()} className="bg-surface rounded-3xl p-6 shadow-sm border border-espresso/5 mb-6">
           <View className="mb-5">
-            <Text className="font-heading text-xs text-espresso mb-2 uppercase tracking-wider">Nama Lengkap</Text>
+            <AppText size="xs" className="font-heading text-espresso mb-2 uppercase tracking-wider">Nama Lengkap</AppText>
             <View className="flex-row items-center bg-cream/60 rounded-2xl px-4 py-3 border border-espresso/10">
               <User color="#3E2E22" size={20} opacity={0.6} />
               <TextInput
@@ -148,7 +149,7 @@ export default function EditProfilScreen() {
           </View>
 
           <View className="mb-2">
-            <Text className="font-heading text-xs text-espresso mb-2 uppercase tracking-wider">Alamat Email (Terkunci)</Text>
+            <AppText size="xs" className="font-heading text-espresso mb-2 uppercase tracking-wider">Alamat Email (Terkunci)</AppText>
             <View className="flex-row items-center bg-espresso/5 rounded-2xl px-4 py-3 border border-espresso/10">
               <Mail color="#3E2E22" size={20} opacity={0.4} />
               <TextInput
@@ -173,7 +174,7 @@ export default function EditProfilScreen() {
             ) : (
               <>
                 <CheckCircle2 color="#3E2E22" size={20} />
-                <Text className="font-heading text-espresso text-base">Simpan Perubahan</Text>
+                <AppText size="base" className="font-heading text-espresso">Simpan Perubahan</AppText>
               </>
             )}
           </TouchableOpacity>

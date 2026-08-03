@@ -11,7 +11,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as SplashScreen from "expo-splash-screen";
 import { GraduationCap, Home, User, Users } from "lucide-react-native";
 import React, { useCallback } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, Text, TextProps, View } from "react-native";
 import "./global.css";
 
 import AkademiScreen from "./src/screens/Akademi/AkademiScreen";
@@ -25,6 +25,7 @@ import ProfilScreen from "./src/screens/Profil/ProfilScreen";
 
 import { AuthProvider, useAuth } from "./context/auth";
 import { ConfirmModalProvider } from "./src/components/ui/ConfirmModal";
+import { LansiaProvider } from "./src/context/LansiaContext";
 import { ScamProvider } from "./src/context/ScamContext";
 import { UserProvider } from "./src/context/UserContext";
 import EditProfilScreen from "./src/screens/Profil/EditProfilScreen";
@@ -33,6 +34,21 @@ SplashScreen.preventAutoHideAsync();
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+interface AppTextProps extends TextProps {
+  className?: string;
+  size?: "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
+}
+
+const fontScaleMap = {
+  xs: { normal: "text-xs", lansia: "text-sm font-medium" },
+  sm: { normal: "text-sm", lansia: "text-base font-semibold" },
+  base: { normal: "text-base", lansia: "text-lg font-bold" },
+  lg: { normal: "text-lg", lansia: "text-xl font-bold" },
+  xl: { normal: "text-xl", lansia: "text-2xl font-bold" },
+  "2xl": { normal: "text-2xl", lansia: "text-3xl font-extrabold" },
+  "3xl": { normal: "text-3xl", lansia: "text-4xl font-extrabold" },
+};
 
 function TabNavigator() {
   return (
@@ -195,18 +211,20 @@ export default function App() {
   return (
     <AuthProvider>
       <UserProvider>
-        <ScamProvider>
-          <ConfirmModalProvider>
-            <View
-              style={{ flex: 1, backgroundColor: "#F0EAE0" }}
-              onLayout={onLayoutRootView}
-            >
-              <NavigationContainer>
-                <MainNavigator />
-              </NavigationContainer>
-            </View>
-          </ConfirmModalProvider>
-        </ScamProvider>
+        <LansiaProvider>
+          <ScamProvider>
+            <ConfirmModalProvider>
+              <View
+                style={{ flex: 1, backgroundColor: "#F0EAE0" }}
+                onLayout={onLayoutRootView}
+              >
+                <NavigationContainer>
+                  <MainNavigator />
+                </NavigationContainer>
+              </View>
+            </ConfirmModalProvider>
+          </ScamProvider>
+        </LansiaProvider>
       </UserProvider>
     </AuthProvider>
   );

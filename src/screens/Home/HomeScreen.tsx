@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Home, Shield, Bell, ChevronRight, PlayCircle, Fingerprint, Lock, Flame, ShieldCheck } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
@@ -7,7 +7,9 @@ import VokalMascot from '../../components/Mascot';
 import { MOCK_CODEWORD, QUICK_ACTIONS, MOCK_USER } from '../../data/mock';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../../context/auth';
+import { useLansia } from '../../context/LansiaContext';
 import RadarModus from '../../components/ui/RadarModus';
+import { AppText } from '../../components/ui/AppText';
 
 const DAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const TODAY_IDX = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
@@ -15,6 +17,7 @@ const TODAY_IDX = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
 export default function HomeScreen() {
   const { user } = useAuth();
   const { xp, level, levelName, codeword } = useUser();
+  const { isLansiaMode } = useLansia();
   const userName = user?.name ? user.name.split(' ')[0] : 'Pengguna';
   const avatarInitials = user?.avatarInitials || 'VK';
   const xpNextLevel = 2000;
@@ -40,11 +43,11 @@ export default function HomeScreen() {
           
           <View className="flex-row justify-between items-start">
             <View>
-              <Text className="text-surface/60 text-sm font-body">Selamat pagi 👋</Text>
-              <Text className="text-white text-3xl font-heading leading-tight">Hi, {userName}!</Text>
+              <AppText size="sm" className="text-surface/60 font-body">Selamat pagi 👋</AppText>
+              <AppText size="3xl" className="text-white font-heading leading-tight">Hi, {userName}!</AppText>
               <View className="flex-row items-center mt-2 bg-mustard/20 rounded-full px-3 py-1 self-start">
                 <Flame color="#E8A33D" size={14} />
-                <Text className="text-mustard text-xs font-display ml-1">1 hari streak</Text>
+                <AppText size="xs" className="text-mustard font-display ml-1">1 hari streak</AppText>
               </View>
             </View>
             <View className="flex-row items-center gap-2">
@@ -53,7 +56,7 @@ export default function HomeScreen() {
                 <View className="absolute top-2 right-2 w-2 h-2 bg-terracotta rounded-full" />
               </TouchableOpacity>
               <View className="w-10 h-10 rounded-full bg-mustard items-center justify-center border-2 border-mustard">
-                <Text className="text-espresso font-display text-sm">{avatarInitials}</Text>
+                <AppText size="sm" className="text-espresso font-display">{avatarInitials}</AppText>
               </View>
             </View>
           </View>
@@ -65,20 +68,20 @@ export default function HomeScreen() {
           <View className="bg-surface/10 rounded-2xl p-4">
             <View className="flex-row justify-between items-center mb-2">
               <View className="flex-row items-center gap-2">
-                <Text className="text-mustard text-lg font-display">Lv.{level}</Text>
-                <Text className="text-surface/80 text-xs font-body">{levelName}</Text>
+                <AppText size="lg" className="text-mustard font-display">Lv.{level}</AppText>
+                <AppText size="xs" className="text-surface/80 font-body">{levelName}</AppText>
               </View>
               <View className="flex-row items-center">
-                <Text className="text-mustard font-display text-sm">{xp.toLocaleString()} </Text>
-                <Text className="text-surface/50 text-xs font-body">/ {xpNextLevel.toLocaleString()} XP</Text>
+                <AppText size="sm" className="text-mustard font-display">{xp.toLocaleString()} </AppText>
+                <AppText size="xs" className="text-surface/50 font-body">/ {xpNextLevel.toLocaleString()} XP</AppText>
               </View>
             </View>
             <View className="w-full bg-surface/20 rounded-full h-3 overflow-hidden">
               <Animated.View className="h-full bg-mustard rounded-full" style={animatedXpStyle} />
             </View>
-            <Text className="text-surface/50 text-[10px] mt-2 font-body text-right">
+            <AppText size="xs" className="text-surface/50 mt-2 font-body text-right">
               {Math.max(0, xpNextLevel - xp)} XP lagi ke level berikutnya
-            </Text>
+            </AppText>
           </View>
         </View>
 
@@ -88,11 +91,11 @@ export default function HomeScreen() {
             const isToday = i === TODAY_IDX;
             return (
               <TouchableOpacity key={day} className="items-center">
-                <Text className="text-[11px] font-body text-text-muted mb-1">{day}</Text>
+                <AppText size="xs" className="font-body text-text-muted mb-1">{day}</AppText>
                 <View className={`w-10 h-10 rounded-full items-center justify-center ${isToday ? 'bg-mustard' : 'bg-espresso/5'}`}>
-                  <Text className={`text-sm font-display ${isToday ? 'text-espresso' : 'text-espresso/60'}`}>
+                  <AppText size="sm" className={`font-display ${isToday ? 'text-espresso' : 'text-espresso/60'}`}>
                     {new Date(Date.now() + (i - TODAY_IDX) * 86400000).getDate()}
-                  </Text>
+                  </AppText>
                 </View>
               </TouchableOpacity>
             );
@@ -103,36 +106,38 @@ export default function HomeScreen() {
         <TouchableOpacity activeOpacity={0.9} className="mt-4 rounded-[24px] overflow-hidden shadow-sm" style={{ elevation: 2, shadowColor: '#3E2E22', shadowOpacity: 0.1, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12 }}>
           <View className="p-5 bg-white border border-espresso/5 rounded-[24px]">
             <View className="flex-row justify-between items-start mb-4">
-              <View>
-                <Text className="text-espresso/70 text-xs font-display uppercase tracking-widest mb-1">🔑 Codeword Hari Ini</Text>
-                <Text className="text-espresso text-[28px] font-heading tracking-widest">{codeword.word}</Text>
+              <View className="flex-1 pr-2">
+                <AppText size="xs" className="text-espresso/70 font-display uppercase tracking-widest mb-1">🔑 Codeword Hari Ini</AppText>
+                <AppText size="3xl" className="text-espresso font-heading tracking-widest">{codeword.word}</AppText>
                 <View className="flex-row items-center gap-1 mt-1 bg-olive/10 px-2 py-1 rounded-full self-start border border-olive/20">
                   <ShieldCheck color="#74822F" size={10} />
-                  <Text className="text-olive text-[8px] font-bold uppercase tracking-wider">Secured by Blockchain</Text>
+                  <AppText size="xs" className="text-olive font-bold uppercase tracking-wider">Secured by Blockchain</AppText>
                 </View>
-                <Text className="text-espresso/40 text-[10px] font-display mt-2" numberOfLines={1}>
+                <AppText size="xs" className="text-espresso/40 font-display mt-2" numberOfLines={1}>
                   Hash: 0x{codeword.hash ? codeword.hash.substring(0, 20) : '000000'}...
-                </Text>
+                </AppText>
               </View>
               <View className="bg-espresso/5 rounded-2xl p-3 items-center">
-                <Text className="text-espresso font-display text-2xl">{codeword.expiresInHours}</Text>
-                <Text className="text-espresso/70 text-[10px] font-body">jam lagi</Text>
+                <AppText size="2xl" className="text-espresso font-display">{codeword.expiresInHours}</AppText>
+                <AppText size="xs" className="text-espresso/70 font-body">jam lagi</AppText>
               </View>
             </View>
 
-            <View className="flex-row items-center mb-4">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <View key={i} className={`w-8 h-8 rounded-full items-center justify-center border-2 ${i < MOCK_CODEWORD.verifiedCount ? 'bg-olive border-olive' : 'bg-espresso/10 border-cream/50'} -ml-2 first:ml-0`}>
-                  {i < MOCK_CODEWORD.verifiedCount ? (
-                    <Text className="text-white text-xs font-display">V</Text>
-                  ) : (
-                    <Lock color="#6B5F52" size={12} opacity={0.5} />
-                  )}
-                </View>
-              ))}
-              <Text className="text-xs text-espresso/80 font-body ml-3">
+            <View className="flex-row items-center mb-4 flex-wrap gap-y-2">
+              <View className="flex-row items-center">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <View key={i} className={`w-8 h-8 rounded-full items-center justify-center border-2 ${i < MOCK_CODEWORD.verifiedCount ? 'bg-olive border-olive' : 'bg-espresso/10 border-cream/50'} -ml-2 first:ml-0`}>
+                    {i < MOCK_CODEWORD.verifiedCount ? (
+                      <AppText size="xs" className="text-white font-display">V</AppText>
+                    ) : (
+                      <Lock color="#6B5F52" size={12} opacity={0.5} />
+                    )}
+                  </View>
+                ))}
+              </View>
+              <AppText size="xs" className="text-espresso/80 font-body ml-3">
                 {MOCK_CODEWORD.verifiedCount}/{MOCK_CODEWORD.totalCount} terverifikasi
-              </Text>
+              </AppText>
             </View>
 
             <View className="flex-row items-center gap-3">
@@ -141,13 +146,13 @@ export default function HomeScreen() {
               </View>
               <View className="flex-row items-center gap-1">
                 <ShieldCheck color="#74822F" size={16} />
-                <Text className="text-olive text-xs font-display">{MOCK_CODEWORD.verifiedCount}/{MOCK_CODEWORD.totalCount}</Text>
+                <AppText size="xs" className="text-olive font-display">{MOCK_CODEWORD.verifiedCount}/{MOCK_CODEWORD.totalCount}</AppText>
               </View>
             </View>
 
             <TouchableOpacity className="mt-5 w-full bg-espresso py-4 rounded-2xl items-center flex-row justify-center gap-2">
-              <Text className="text-white">📲</Text>
-              <Text className="text-cream font-display text-sm">Bagikan ke Keluarga</Text>
+              <AppText className="text-white">📲</AppText>
+              <AppText size="sm" className="text-cream font-display">Bagikan ke Keluarga</AppText>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -155,18 +160,18 @@ export default function HomeScreen() {
         {/* QUICK ACTIONS */}
         <View className="mt-6">
           <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-espresso text-base font-heading">Aksi Cepat</Text>
+            <AppText size="base" className="text-espresso font-heading">Aksi Cepat</AppText>
             <TouchableOpacity className="flex-row items-center">
-              <Text className="text-mustard text-xs font-body mr-1">Lihat semua</Text>
+              <AppText size="xs" className="text-mustard font-body mr-1">Lihat semua</AppText>
               <ChevronRight color="#E8A33D" size={14} />
             </TouchableOpacity>
           </View>
           <View className="flex-row justify-between gap-3 flex-wrap">
             {QUICK_ACTIONS.map((action) => (
-              <TouchableOpacity key={action.id} className={`w-[48%] rounded-2xl p-4 ${action.bg}`}>
-                <Text className="text-3xl mb-3">{action.icon}</Text>
-                <Text className={`font-heading text-sm mb-1 ${action.textColor}`}>{action.title}</Text>
-                <Text className={`font-body text-[11px] opacity-80 ${action.textColor}`}>{action.desc}</Text>
+              <TouchableOpacity key={action.id} className={`${isLansiaMode ? 'w-full mb-1' : 'w-[48%] mb-1'} rounded-2xl p-4 ${action.bg}`}>
+                <AppText size="2xl" className="mb-3">{action.icon}</AppText>
+                <AppText size="sm" className={`font-heading mb-1 ${action.textColor}`}>{action.title}</AppText>
+                <AppText size="xs" className={`font-body opacity-80 ${action.textColor}`}>{action.desc}</AppText>
               </TouchableOpacity>
             ))}
           </View>
@@ -180,20 +185,19 @@ export default function HomeScreen() {
           <View className="flex-row justify-between items-center mb-4">
             <View className="flex-row items-center gap-3">
               <View className="w-12 h-12 rounded-full bg-mustard/20 items-center justify-center">
-                <Text className="text-2xl">🎓</Text>
+                <AppText size="xl">🎓</AppText>
               </View>
               <View>
-                <Text className="text-espresso font-heading text-base">Akademi VOKAL</Text>
-                <Text className="text-espresso/60 font-body text-[11px]">Total XP kamu: <Text className="text-mustard font-bold">{xp.toLocaleString()}</Text></Text>
+                <AppText size="base" className="text-espresso font-heading">Akademi VOKAL</AppText>
+                <AppText size="xs" className="text-espresso/60 font-body">Total XP kamu: <AppText size="xs" className="text-mustard font-bold">{xp.toLocaleString()}</AppText></AppText>
               </View>
             </View>
           </View>
           <TouchableOpacity 
             activeOpacity={0.8}
             className="w-full bg-mustard py-3 rounded-xl items-center flex-row justify-center gap-2 border-b-4 border-[#d49232]"
-            // NOTE: In a real app with navigation props, this would navigate to the Akademi tab
           >
-            <Text className="text-espresso font-heading text-sm">Lanjutkan Perjalanan</Text>
+            <AppText size="sm" className="text-espresso font-heading">Lanjutkan Perjalanan</AppText>
             <ChevronRight color="#3E2E22" size={16} />
           </TouchableOpacity>
         </View>
@@ -201,13 +205,13 @@ export default function HomeScreen() {
         {/* SKOR EKSPOSUR SUARA */}
         <TouchableOpacity activeOpacity={0.9} className="mt-6 bg-olive/10 border border-olive/20 rounded-[24px] p-5 mb-6 flex-row items-center gap-4">
           <View className="w-16 h-16 rounded-full bg-olive/20 items-center justify-center">
-            <Text className="text-2xl">📊</Text>
+            <AppText size="2xl">📊</AppText>
           </View>
           <View className="flex-1">
-            <Text className="text-espresso font-heading text-base mb-1">Skor Eksposur Suara</Text>
-            <Text className="text-espresso/70 text-[11px] font-body leading-tight">Jejak suaramu di medsos terpantau sedikit. Sangat sulit untuk dikloning AI.</Text>
+            <AppText size="base" className="text-espresso font-heading mb-1">Skor Eksposur Suara</AppText>
+            <AppText size="xs" className="text-espresso/70 font-body leading-tight">Jejak suaramu di medsos terpantau sedikit. Sangat sulit untuk dikloning AI.</AppText>
             <View className="bg-olive px-3 py-1 rounded-full self-start mt-2 shadow-sm">
-              <Text className="text-white text-[9px] font-bold">RISIKO RENDAH</Text>
+              <AppText size="xs" className="text-white font-bold">RISIKO RENDAH</AppText>
             </View>
           </View>
           <ChevronRight color="#74822F" size={20} opacity={0.5} />

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Modal, Alert, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, ScrollView, Modal, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mic, ShieldAlert, ShieldCheck, Activity, Phone, AlertOctagon, HeartPulse, X, Cloud, CloudOff, Zap } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, withSequence, FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
@@ -8,6 +8,7 @@ import { Audio } from 'expo-av';
 import { FAMILY_MEMBERS } from '../../data/mock';
 import { analyzeLocalDSP, DspAnalysisResult } from '../../utils/audioAnalyzer';
 import { API_CONFIG } from '../../utils/config';
+import { AppText } from '../../components/ui/AppText';
 
 type ScanState = 'idle' | 'recording' | 'analyzing' | 'result';
 
@@ -181,15 +182,15 @@ export default function CekSuaraScreen() {
         {/* HEADER */}
         <View className="mb-6">
           <View className="flex-row items-center justify-between mb-1">
-            <Text className="text-3xl font-heading text-espresso">Audio Risk Toolkit</Text>
+            <AppText size="2xl" className="font-heading text-espresso">Audio Risk Toolkit</AppText>
             <View className="flex-row items-center gap-1 bg-mustard/20 px-3 py-1 rounded-full border border-mustard/40">
               <Zap color="#E8A33D" size={12} />
-              <Text className="text-mustard font-bold text-[10px] uppercase tracking-wider">Engine Hybrid</Text>
+              <AppText size="xs" className="text-mustard font-bold uppercase tracking-wider">Engine Hybrid</AppText>
             </View>
           </View>
-          <Text className="text-xs font-body text-text-muted leading-relaxed">
+          <AppText size="xs" className="font-body text-text-muted leading-relaxed">
             Deteksi 2-lapis: DSP On-Device (0ms latensi) memindai pola tekanan vokal, dilanjutkan Verifikasi Spektral Cloud AI.
-          </Text>
+          </AppText>
         </View>
 
         {/* INTERACTIVE SCAN AREA */}
@@ -222,22 +223,26 @@ export default function CekSuaraScreen() {
 
           <View className="mt-6 items-center h-16">
             {scanState === 'idle' && (
-              <Animated.Text entering={FadeIn} className="text-espresso text-base font-heading text-center">Tekan untuk Merekam Live</Animated.Text>
+              <Animated.View entering={FadeIn}>
+                <AppText size="base" className="text-espresso font-heading text-center">Tekan untuk Merekam Live</AppText>
+              </Animated.View>
             )}
             {scanState === 'recording' && (
               <Animated.View entering={FadeIn} className="items-center">
-                <Text className="text-terracotta text-base font-heading text-center">Merekam Percakapan (5s)...</Text>
-                <Text className="text-text-muted text-xs font-body mt-0.5">Memproses sinyal amplitudo mikrofon</Text>
+                <AppText size="base" className="text-terracotta font-heading text-center">Merekam Percakapan (5s)...</AppText>
+                <AppText size="xs" className="text-text-muted font-body mt-0.5">Memproses sinyal amplitudo mikrofon</AppText>
               </Animated.View>
             )}
             {scanState === 'analyzing' && (
               <Animated.View entering={FadeIn} className="items-center">
-                <Text className="text-olive text-base font-heading text-center">Memproses Pipeline Hybrid...</Text>
-                <Text className="text-text-muted text-xs font-body text-center mt-0.5">DSP On-Device ⚡ & Spektral Cloud ☁️</Text>
+                <AppText size="base" className="text-olive font-heading text-center">Memproses Pipeline Hybrid...</AppText>
+                <AppText size="xs" className="text-text-muted font-body text-center mt-0.5">DSP On-Device ⚡ & Spektral Cloud ☁️</AppText>
               </Animated.View>
             )}
             {scanState === 'result' && (
-              <Animated.Text entering={FadeIn} className="text-espresso text-base font-heading text-center">Hasil Pemindaian Selesai</Animated.Text>
+              <Animated.View entering={FadeIn}>
+                <AppText size="base" className="text-espresso font-heading text-center">Hasil Pemindaian Selesai</AppText>
+              </Animated.View>
             )}
           </View>
         </View>
@@ -250,8 +255,8 @@ export default function CekSuaraScreen() {
             {finalCombinedScore >= 60 ? (
               <View className="w-full bg-warning/10 rounded-[24px] p-5 shadow-sm border-2 border-warning/30 mb-5">
                 <View className="items-center mb-4 bg-white/60 p-4 rounded-2xl border border-warning/10">
-                  <Text className="text-4xl font-display text-warning">{finalCombinedScore}%</Text>
-                  <Text className="text-warning text-xs font-heading mt-1 text-center uppercase tracking-wider">Tingkat Risiko Scam / Kloning AI</Text>
+                  <AppText size="3xl" className="font-display text-warning">{finalCombinedScore}%</AppText>
+                  <AppText size="xs" className="text-warning font-heading mt-1 text-center uppercase tracking-wider">Tingkat Risiko Scam / Kloning AI</AppText>
                 </View>
 
                 <View className="flex-row items-center gap-3 mb-3">
@@ -259,20 +264,20 @@ export default function CekSuaraScreen() {
                     <ShieldAlert color="#7A2E28" size={26} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-warning text-base font-heading leading-tight">Terdeteksi Pola Mencurigakan</Text>
-                    <Text className="text-espresso/70 text-xs font-body mt-0.5">Suara menunjukkan anomali psikologis / sintetis.</Text>
+                    <AppText size="base" className="text-warning font-heading leading-tight">Terdeteksi Pola Mencurigakan</AppText>
+                    <AppText size="xs" className="text-espresso/70 font-body mt-0.5">Suara menunjukkan anomali psikologis / sintetis.</AppText>
                   </View>
                 </View>
 
                 <View className="bg-warning p-3.5 rounded-xl items-center">
-                  <Text className="text-white font-heading text-sm uppercase tracking-wider">WASPADA SCAM / JANGAN TRANSFER</Text>
+                  <AppText size="sm" className="text-white font-heading uppercase tracking-wider">WASPADA SCAM / JANGAN TRANSFER</AppText>
                 </View>
               </View>
             ) : (
               <View className="w-full bg-olive/10 rounded-[24px] p-5 shadow-sm border-2 border-olive/30 mb-5">
                 <View className="items-center mb-4 bg-white/60 p-4 rounded-2xl border border-olive/10">
-                  <Text className="text-4xl font-display text-olive">{(100 - finalCombinedScore).toFixed(1)}%</Text>
-                  <Text className="text-olive text-xs font-heading mt-1 text-center uppercase tracking-wider">Tingkat Kewajaran Vokal</Text>
+                  <AppText size="3xl" className="font-display text-olive">{(100 - finalCombinedScore).toFixed(1)}%</AppText>
+                  <AppText size="xs" className="text-olive font-heading mt-1 text-center uppercase tracking-wider">Tingkat Kewajaran Vokal</AppText>
                 </View>
 
                 <View className="flex-row items-center gap-3 mb-3">
@@ -280,19 +285,19 @@ export default function CekSuaraScreen() {
                     <ShieldCheck color="#74822F" size={26} />
                   </View>
                   <View className="flex-1">
-                    <Text className="text-olive text-base font-heading leading-tight">Pola Bicara Natural</Text>
-                    <Text className="text-espresso/70 text-xs font-body mt-0.5">Tidak ada indikasi urgensi tergesa-gesa atau anomali bot.</Text>
+                    <AppText size="base" className="text-olive font-heading leading-tight">Pola Bicara Natural</AppText>
+                    <AppText size="xs" className="text-espresso/70 font-body mt-0.5">Tidak ada indikasi urgensi tergesa-gesa atau anomali bot.</AppText>
                   </View>
                 </View>
 
                 <View className="bg-olive p-3.5 rounded-xl items-center">
-                  <Text className="text-white font-heading text-sm uppercase tracking-wider">AMAN — TIDAK ADA INDIKASI SCAM</Text>
+                  <AppText size="sm" className="text-white font-heading uppercase tracking-wider">AMAN — TIDAK ADA INDIKASI SCAM</AppText>
                 </View>
               </View>
             )}
 
             {/* DUAL LAYER BREAKDOWN CARDS */}
-            <Text className="text-espresso font-heading text-sm mb-3">Rincian Analisis Hybrid Layer:</Text>
+            <AppText size="sm" className="text-espresso font-heading mb-3">Rincian Analisis Hybrid Layer:</AppText>
             
             <View className="gap-3 mb-5">
               
@@ -304,19 +309,19 @@ export default function CekSuaraScreen() {
                   </View>
                   <View className="flex-1">
                     <View className="flex-row items-center gap-2">
-                      <Text className="font-heading text-espresso text-xs">Lapis 1: DSP On-Device</Text>
+                      <AppText size="xs" className="font-heading text-espresso">Lapis 1: DSP On-Device</AppText>
                       <View className="bg-olive/20 px-2 py-0.5 rounded-md">
-                        <Text className="text-olive text-[9px] font-bold">0ms INSTAN</Text>
+                        <AppText size="xs" className="text-olive font-bold">0ms INSTAN</AppText>
                       </View>
                     </View>
-                    <Text className="font-body text-text-muted text-[11px] mt-0.5">
-                      Urgent Score: <Text className="font-bold text-espresso">{dspResult?.urgencyScore}%</Text> • Jeda Napas: <Text className="font-bold text-espresso">{dspResult?.silenceGaps}x</Text>
-                    </Text>
+                    <AppText size="xs" className="font-body text-text-muted mt-0.5">
+                      Urgent Score: <AppText size="xs" className="font-bold text-espresso">{dspResult?.urgencyScore}%</AppText> • Jeda Napas: <AppText size="xs" className="font-bold text-espresso">{dspResult?.silenceGaps}x</AppText>
+                    </AppText>
                   </View>
                 </View>
-                <Text className={`font-display text-sm ${dspResult && dspResult.isHighUrgency ? 'text-warning' : 'text-olive'}`}>
+                <AppText size="sm" className={`font-display ${dspResult && dspResult.isHighUrgency ? 'text-warning' : 'text-olive'}`}>
                   {dspResult?.urgencyScore}%
-                </Text>
+                </AppText>
               </View>
 
               {/* LAYER 2: CLOUD AI SPECTRAL CARD */}
@@ -327,32 +332,32 @@ export default function CekSuaraScreen() {
                   </View>
                   <View className="flex-1">
                     <View className="flex-row items-center gap-2">
-                      <Text className="font-heading text-espresso text-xs">Lapis 2: Spektral Cloud AI</Text>
+                      <AppText size="xs" className="font-heading text-espresso">Lapis 2: Spektral Cloud AI</AppText>
                       {isOfflineMode ? (
                         <View className="bg-espresso/10 px-2 py-0.5 rounded-md">
-                          <Text className="text-espresso/60 text-[9px] font-bold">MODE OFFLINE</Text>
+                          <AppText size="xs" className="text-espresso/60 font-bold">MODE OFFLINE</AppText>
                         </View>
                       ) : (
                         <View className="bg-mustard/20 px-2 py-0.5 rounded-md">
-                          <Text className="text-mustard text-[9px] font-bold">TERHUBUNG</Text>
+                          <AppText size="xs" className="text-mustard font-bold">TERHUBUNG</AppText>
                         </View>
                       )}
                     </View>
-                    <Text className="font-body text-text-muted text-[11px] mt-0.5">
+                    <AppText size="xs" className="font-body text-text-muted mt-0.5">
                       {isOfflineMode 
                         ? 'Sinyal terbatas. Memakai proteksi lokal.' 
                         : cloudScore !== null 
                         ? `Probabilitas AI: ${cloudScore}%`
                         : 'Memproses spektral vokal...'}
-                    </Text>
+                    </AppText>
                   </View>
                 </View>
                 {cloudScore !== null ? (
-                  <Text className={`font-display text-sm ${cloudScore >= 60 ? 'text-warning' : 'text-olive'}`}>
+                  <AppText size="sm" className={`font-display ${cloudScore >= 60 ? 'text-warning' : 'text-olive'}`}>
                     {cloudScore}%
-                  </Text>
+                  </AppText>
                 ) : (
-                  <Text className="font-body text-espresso/40 text-xs">—</Text>
+                  <AppText size="xs" className="font-body text-espresso/40">—</AppText>
                 )}
               </View>
 
@@ -368,8 +373,8 @@ export default function CekSuaraScreen() {
                 <View className="flex-row items-center gap-3">
                   <HeartPulse color="#E8A33D" size={24} />
                   <View>
-                    <Text className="text-cream font-heading text-sm">Mulai Panik?</Text>
-                    <Text className="text-cream/70 font-body text-xs mt-0.5">Aktifkan Mode Tenang untuk rileks</Text>
+                    <AppText size="sm" className="text-cream font-heading">Mulai Panik?</AppText>
+                    <AppText size="xs" className="text-cream/70 font-body mt-0.5">Aktifkan Mode Tenang untuk rileks</AppText>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -380,7 +385,7 @@ export default function CekSuaraScreen() {
               onPress={() => setScanState('idle')}
               className="mt-2 py-3 items-center"
             >
-              <Text className="text-text-muted font-heading text-xs">Pindai Ulang</Text>
+              <AppText size="xs" className="text-text-muted font-heading">Pindai Ulang</AppText>
             </TouchableOpacity>
 
           </Animated.View>
@@ -398,35 +403,35 @@ export default function CekSuaraScreen() {
           </View>
 
           <View className="items-center justify-center flex-1">
-            <Text className="text-white text-3xl font-heading mb-12 text-center">Jangan Panik.</Text>
+            <AppText size="3xl" className="text-white font-heading mb-12 text-center">Jangan Panik.</AppText>
 
             <View className="relative items-center justify-center w-64 h-64 mb-16">
               <Animated.View className="absolute w-56 h-56 rounded-full border-4 border-olive/30 bg-olive/10" style={animatedBreath} />
               <Animated.View className="absolute w-40 h-40 rounded-full border-4 border-olive/50 bg-olive/20" style={[animatedBreath, { animationDelay: '200ms' }]} />
               <View className="w-32 h-32 rounded-full bg-olive items-center justify-center shadow-lg">
-                <Text className="text-white font-display text-4xl">{countdown}s</Text>
+                <AppText size="3xl" className="text-white font-display">{countdown}s</AppText>
               </View>
             </View>
 
-            <Text className="text-white/80 font-body text-lg text-center px-4 leading-relaxed mb-2">
+            <AppText size="lg" className="text-white/80 font-body text-center px-4 leading-relaxed mb-2">
               Tarik napas panjang... dan hembuskan perlahan.
-            </Text>
-            <Text className="text-white/60 font-body text-sm text-center px-6 leading-relaxed">
+            </AppText>
+            <AppText size="sm" className="text-white/60 font-body text-center px-6 leading-relaxed">
               Penipu sengaja membuatmu terburu-buru. Waktu berpihak padamu. Jangan bertindak sebelum menghubungi keluarga.
-            </Text>
+            </AppText>
           </View>
 
           <View className="gap-3">
-            <Text className="text-white/50 text-xs font-display text-center uppercase tracking-widest mb-2">Hubungi Darurat Sekarang</Text>
+            <AppText size="xs" className="text-white/50 font-display text-center uppercase tracking-widest mb-2">Hubungi Darurat Sekarang</AppText>
             {FAMILY_MEMBERS.slice(0, 2).map((member) => (
               <TouchableOpacity key={member.id} activeOpacity={0.8} className="bg-white/10 rounded-2xl p-4 flex-row items-center justify-between border border-white/5">
                 <View className="flex-row items-center gap-3">
                   <View className="w-12 h-12 rounded-full bg-mustard items-center justify-center">
-                    <Text className="text-espresso font-display text-xl">{member.name.charAt(0)}</Text>
+                    <AppText size="xl" className="text-espresso font-display">{member.name.charAt(0)}</AppText>
                   </View>
                   <View>
-                    <Text className="text-white font-heading text-base">{member.name}</Text>
-                    <Text className="text-white/50 font-body text-xs">{member.role}</Text>
+                    <AppText size="base" className="text-white font-heading">{member.name}</AppText>
+                    <AppText size="xs" className="text-white/50 font-body">{member.role}</AppText>
                   </View>
                 </View>
                 <View className="bg-olive p-3 rounded-full">
