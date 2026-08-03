@@ -16,10 +16,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleEmailLogin = async () => {
-    const success = await signInWithEmail(email, password);
-    if (success && navigation && navigation.navigate) {
-      navigation.navigate('Root');
-    }
+    await signInWithEmail(email, password);
   };
 
   return (

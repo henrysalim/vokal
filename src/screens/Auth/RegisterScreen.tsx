@@ -5,6 +5,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, ChevronLeft } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../context/auth';
+import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import VokalMascot from '../../components/Mascot';
 
 export default function RegisterScreen() {
@@ -31,23 +32,43 @@ export default function RegisterScreen() {
   const strengthLabels = ['', 'Lemah', 'Cukup', 'Kuat', 'Sangat Kuat'];
   const strengthColors = ['bg-espresso/15', 'bg-terracotta', 'bg-mustard', 'bg-olive', 'bg-olive'];
 
+  const { showConfirm } = useConfirmModal();
+
   const handleRegister = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Semua kolom wajib diisi.');
+      showConfirm({
+        title: 'Formulir Belum Lengkap',
+        message: 'Semua kolom wajib diisi.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'mustard',
+        iconType: 'warning',
+      });
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Kata sandi tidak cocok.');
+      showConfirm({
+        title: 'Kata Sandi Tidak Cocok',
+        message: 'Pastikan Konfirmasi Kata Sandi sama dengan Kata Sandi Anda.',
+        confirmText: 'Coba Lagi',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'danger',
+      });
       return;
     }
     if (password.length < 8) {
-      Alert.alert('Error', 'Kata sandi minimal 8 karakter.');
+      showConfirm({
+        title: 'Kata Sandi Terlalu Pendek',
+        message: 'Kata sandi minimal harus terdiri dari 8 karakter.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'mustard',
+        iconType: 'warning',
+      });
       return;
     }
-    const success = await signUpWithEmail(name, email, password);
-    if (success && navigation && navigation.navigate) {
-      navigation.navigate('Root');
-    }
+    await signUpWithEmail(name, email, password);
   };
 
   return (
