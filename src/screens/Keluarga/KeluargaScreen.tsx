@@ -23,6 +23,7 @@ import {
 import * as Contacts from 'expo-contacts';
 import { FAMILY_MEMBERS } from '../../data/mock';
 import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../../context/auth';
 import DashboardAnak from '../../components/ui/DashboardAnak';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
 
@@ -34,14 +35,28 @@ const MOCK_FALLBACK_CONTACTS: ContactItem[] = [
   { id: 'c2', contactType: Contacts.ContactTypes.Person, name: 'Kakek Budi', phoneNumbers: [{ number: '+62 812-3456-7890', label: 'Seluler' }] },
   { id: 'c3', contactType: Contacts.ContactTypes.Person, name: 'Tante Dewi', phoneNumbers: [{ number: '+62 815-1122-3344', label: 'Seluler' }] },
   { id: 'c4', contactType: Contacts.ContactTypes.Person, name: 'Om Roy', phoneNumbers: [{ number: '+62 817-5566-7788', label: 'Seluler' }] },
-  { id: 'c5', contactType: Contacts.ContactTypes.Person, name: 'Adik Rani', phoneNumbers: [{ number: '+62 818-9900-1122', label: 'Seluler' }] },
-  { id: 'c6', contactType: Contacts.ContactTypes.Person, name: 'Ibu Ratna', phoneNumbers: [{ number: '+62 812-4455-6677', label: 'Seluler' }] },
-  { id: 'c7', contactType: Contacts.ContactTypes.Person, name: 'Pak RT Hendra', phoneNumbers: [{ number: '+62 811-2233-4455', label: 'Seluler' }] },
-  { id: 'c8', contactType: Contacts.ContactTypes.Person, name: 'Paman Bambang', phoneNumbers: [{ number: '+62 856-7788-9900', label: 'Seluler' }] },
 ];
 
 export default function KeluargaScreen() {
-  const [familyMembers, setFamilyMembers] = useState(FAMILY_MEMBERS);
+  const { user } = useAuth();
+  const currentUserName = user?.name || 'Pengguna VOKAL';
+
+  const [familyMembers, setFamilyMembers] = useState(() => [
+    { id: user?.id || 'my-user', name: `${currentUserName} (Anda)`, role: 'Kepala Keluarga (Admin)', status: 'Aman', verified: true }
+  ]);
+
+  React.useEffect(() => {
+    if (user?.name) {
+      setFamilyMembers(prev => {
+        const hasMe = prev.some(m => m.role.includes('Anda'));
+        if (!hasMe) {
+          return [{ id: user.id, name: `${user.name} (Anda)`, role: 'Kepala Keluarga (Admin)', status: 'Aman', verified: true }, ...prev];
+        } else {
+          return prev.map(m => m.role.includes('Anda') ? { ...m, id: user.id, name: `${user.name} (Anda)` } : m);
+        }
+      });
+    }
+  }, [user?.name, user?.id]);
   const [deviceContacts, setDeviceContacts] = useState<ContactItem[]>([]);
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);
@@ -299,9 +314,10 @@ export default function KeluargaScreen() {
             const isMe = member.role.includes('Anda');
             const isSafe = member.status === 'Aman';
             const isWaiting = member.status === 'Menunggu';
+            const uniqueKey = `${member.id || 'mem'}_${i}`;
             
             return (
-              <Animated.View entering={FadeInDown.delay(300 + i * 100).springify()} key={member.id} layout={Layout.springify()} className="bg-surface rounded-2xl overflow-hidden shadow-sm" style={{ elevation: 1 }}>
+              <Animated.View entering={FadeInDown.delay(300 + i * 100).springify()} key={uniqueKey} layout={Layout.springify()} className="bg-surface rounded-2xl overflow-hidden shadow-sm" style={{ elevation: 1 }}>
                 <TouchableOpacity activeOpacity={0.7} onPress={() => toggleExpand(member.id)} className="p-4 flex-row items-center justify-between">
                   <View className="flex-row items-center gap-3">
                     <View className={`w-12 h-12 rounded-full items-center justify-center border-2 ${isSafe ? 'border-olive bg-olive/10' : isWaiting ? 'border-espresso/20 bg-espresso/5' : 'border-terracotta bg-terracotta/10'}`}>

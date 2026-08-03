@@ -6,13 +6,17 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from '
 import VokalMascot from '../../components/Mascot';
 import { MOCK_CODEWORD, QUICK_ACTIONS, MOCK_USER } from '../../data/mock';
 import { useUser } from '../../context/UserContext';
+import { useAuth } from '../../../context/auth';
 import RadarModus from '../../components/ui/RadarModus';
 
 const DAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const TODAY_IDX = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
 
 export default function HomeScreen() {
+  const { user } = useAuth();
   const { xp, level, levelName, codeword } = useUser();
+  const userName = user?.name ? user.name.split(' ')[0] : 'Pengguna';
+  const avatarInitials = user?.avatarInitials || 'VK';
   const xpNextLevel = 2000;
   const xpPct = Math.min(100, Math.round((xp / xpNextLevel) * 100));
   const xpWidth = useSharedValue(0);
@@ -37,10 +41,10 @@ export default function HomeScreen() {
           <View className="flex-row justify-between items-start">
             <View>
               <Text className="text-surface/60 text-sm font-body">Selamat pagi 👋</Text>
-              <Text className="text-white text-3xl font-heading leading-tight">Hi, {MOCK_USER.name.split(' ')[0]}!</Text>
+              <Text className="text-white text-3xl font-heading leading-tight">Hi, {userName}!</Text>
               <View className="flex-row items-center mt-2 bg-mustard/20 rounded-full px-3 py-1 self-start">
                 <Flame color="#E8A33D" size={14} />
-                <Text className="text-mustard text-xs font-display ml-1">{MOCK_USER.streak} hari streak</Text>
+                <Text className="text-mustard text-xs font-display ml-1">1 hari streak</Text>
               </View>
             </View>
             <View className="flex-row items-center gap-2">
@@ -49,7 +53,7 @@ export default function HomeScreen() {
                 <View className="absolute top-2 right-2 w-2 h-2 bg-terracotta rounded-full" />
               </TouchableOpacity>
               <View className="w-10 h-10 rounded-full bg-mustard items-center justify-center border-2 border-mustard">
-                <Text className="text-espresso font-display text-sm">{MOCK_USER.avatar}</Text>
+                <Text className="text-espresso font-display text-sm">{avatarInitials}</Text>
               </View>
             </View>
           </View>
