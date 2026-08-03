@@ -4,24 +4,28 @@
 import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { supabase, isSupabaseConfigured } from '../src/lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type User = {
   id: string;
   name: string;
   email: string;
   avatarInitials: string;
+  avatarUrl?: string | null;
 };
 
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
   isOnboarded: boolean;
+  isInitializing: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<boolean>;
   signUpWithEmail: (name: string, email: string, password: string) => Promise<boolean>;
   signUpWithGoogle: () => Promise<void>;
   signOut: () => void;
   completeOnboarding: () => void;
+  updateProfile: (newName: string, newAvatarUrl?: string | null) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -30,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isOnboarded, setIsOnboarded] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const fetchUserProfile = async (userId: string, defaultEmail: string, fallbackName?: string) => {
     try {
@@ -41,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const name = profile?.name || fallbackName || defaultEmail.split('@')[0] || 'Pengguna VOKAL';
       const initials = profile?.avatar_initials || name.substring(0, 2).toUpperCase();
+      const avatarUrl = profile?.avatar_url || null;
 
       // Upsert profile safely once authenticated
       if (!profile) {
@@ -57,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name,
         email: defaultEmail,
         avatarInitials: initials,
+        avatarUrl
       });
     } catch (e) {
       const name = fallbackName || defaultEmail.split('@')[0] || 'Pengguna VOKAL';
@@ -65,9 +72,119 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name,
         email: defaultEmail,
         avatarInitials: name.substring(0, 2).toUpperCase(),
+        avatarUrl: null
       });
     }
   };
+
+  useEffect(() => {
+    async function initAuth() {
+      try {
+        const onboardedVal = await AsyncStorage.getItem('@vokal_onboarded');
+        const hasOnBoardedFlag = onboardedVal === 'true';
+        
+        if (isSupabaseConfigured()) {
+          const {data: {session}} = await supabase.auth.getSession();
+          if (session?.user) {
+            const u = session?.user;
+            await fetchUserProfile(u?.id, u?.email || '', u?.user_metadata.name)
+            setIsOnboarded(true);
+          } else {
+            setIsOnboarded(hasOnBoardedFlag)
+          }
+        } else {
+          setIsOnboarded(hasOnBoardedFlag)
+        }
+      } catch(err) {
+        console.error('Init Auth Error:', err);
+      } finally {
+        setIsInitializing(false);
+      }
+    }
+
+    initAuth();
+
+    if (isSupabaseConfigured()) {
+      const {data: {subscription}} = supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+          const u = session.user;
+          fetchUserProfile(u.id, u.email || '', u.user_metadata?.name);
+          setIsOnboarded(true);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null)
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [])
+
+  useEffect(() => {
+    AsyncStorage.getItem('@vokal_onboarded').then((val) => {
+
+      if (val === 'true') {
+        setIsOnboarded(true)
+      }
+    })
+  }, []);
+
+  const updateProfile = useCallback(
+    async (newName: string, newAvatarUrl?: string | null): Promise<boolean> => {
+      const cleanName = newName.trim();
+      if (!cleanName || !user) {
+        Alert.alert('Error', 'Nama tidak boleh kosong.');
+        return false;
+      }
+
+      setIsLoading(true);
+      try {
+        const initials = cleanName
+        .split(' ')
+        .map((w) => w[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
+
+        const avatarUrlToSave = newAvatarUrl !== undefined ? newAvatarUrl : user.avatarUrl;
+
+        if (isSupabaseConfigured()) {
+          const {error} = await supabase
+            .from('profiles')
+            .upsert({
+              id: user.id,
+              name: cleanName,
+              avatar_initials: initials,
+              avatar_url: avatarUrlToSave,
+              email: user.email,
+            })
+
+          if (error) {
+            Alert.alert('Gagal Memperbarui Profil', error.message);
+            return false
+          }
+        }
+
+        // Update local user state
+        setUser({
+          ...user,
+          name: cleanName,
+          avatarInitials: initials,
+          avatarUrl: avatarUrlToSave
+        });
+
+        return true;
+      } catch (error: any) {
+        console.error('Error updating profile:', error);
+        Alert.alert('Error', 'Terjadi kesalahan saat memperbarui profil');
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [user]
+  );
 
   useEffect(() => {
     if (isSupabaseConfigured()) {
@@ -242,14 +359,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [signInWithGoogle]);
 
   const signOut = useCallback(async () => {
-    if (isSupabaseConfigured()) {
-      await supabase.auth.signOut();
+    try {
+      if (isSupabaseConfigured()) {
+        const {error} = await supabase.auth.signOut();
+        if (error) {
+          console.error("Gagal signOUt dari Supabase: ", error.message)
+        } 
+      }
+    } catch (err) {
+      console.error("Error saat logout: ", err);
+    } finally {
+      setUser(null);
     }
-    setUser(null);
   }, []);
 
-  const completeOnboarding = useCallback(() => {
+  const completeOnboarding = useCallback(async () => {
     setIsOnboarded(true);
+    await AsyncStorage.setItem('@vokal_onboarded', 'true');
   }, []);
 
   return (
@@ -258,12 +384,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         isOnboarded,
+        isInitializing,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
         signUpWithGoogle,
         signOut,
         completeOnboarding,
+        updateProfile
       }}
     >
       {children}
