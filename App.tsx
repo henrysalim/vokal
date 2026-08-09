@@ -9,7 +9,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as SplashScreen from "expo-splash-screen";
-import { GraduationCap, Home, User, Users } from "lucide-react-native";
+import { GraduationCap, Home, ScanSearch, User, Users } from "lucide-react-native";
 import React, { useCallback } from "react";
 import { ActivityIndicator, Text, TextProps, View } from "react-native";
 import "./global.css";
@@ -22,18 +22,26 @@ import HomeScreen from "./src/screens/Home/HomeScreen";
 import KeluargaScreen from "./src/screens/Keluarga/KeluargaScreen";
 import OnboardingScreen from "./src/screens/Onboarding/OnboardingScreen";
 import ProfilScreen from "./src/screens/Profil/ProfilScreen";
+import EditProfilScreen from "./src/screens/Profil/EditProfilScreen";
+
+// Analisis Hub & sub-screens
+import AnalisisHubScreen from "./src/screens/Analisis/AnalisisHubScreen";
+import CekEmailScreen from "./src/screens/Analisis/CekEmailScreen";
+import CekPesanScreen from "./src/screens/Analisis/CekPesanScreen";
+import KontakDaruratScreen from "./src/screens/Analisis/KontakDaruratScreen";
+import CekNomorScreen from "./src/screens/Analisis/CekNomorScreen";
 
 import { AuthProvider, useAuth } from "./context/auth";
 import { ConfirmModalProvider } from "./src/components/ui/ConfirmModal";
 import { LansiaProvider } from "./src/context/LansiaContext";
 import { ScamProvider } from "./src/context/ScamContext";
 import { UserProvider } from "./src/context/UserContext";
-import EditProfilScreen from "./src/screens/Profil/EditProfilScreen";
 
 SplashScreen.preventAutoHideAsync();
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+const AnalisisStack = createNativeStackNavigator();
 
 interface AppTextProps extends TextProps {
   className?: string;
@@ -49,6 +57,20 @@ const fontScaleMap = {
   "2xl": { normal: "text-2xl", lansia: "text-3xl font-extrabold" },
   "3xl": { normal: "text-3xl", lansia: "text-4xl font-extrabold" },
 };
+
+// Nested stack navigator for the Analisis tab
+function AnalisisNavigator() {
+  return (
+    <AnalisisStack.Navigator screenOptions={{ headerShown: false }}>
+      <AnalisisStack.Screen name="AnalisisHub" component={AnalisisHubScreen} />
+      <AnalisisStack.Screen name="CekSuara" component={CekSuaraScreen} />
+      <AnalisisStack.Screen name="CekEmail" component={CekEmailScreen} />
+      <AnalisisStack.Screen name="CekPesan" component={CekPesanScreen} />
+      <AnalisisStack.Screen name="CekNomor" component={CekNomorScreen} />
+      <AnalisisStack.Screen name="KontakDarurat" component={KontakDaruratScreen} />
+    </AnalisisStack.Navigator>
+  );
+}
 
 function TabNavigator() {
   return (
@@ -97,10 +119,10 @@ function TabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Fab"
-        component={CekSuaraScreen}
+        name="Analisis"
+        component={AnalisisNavigator}
         options={{
-          tabBarLabel: "Cek Suara",
+          tabBarLabel: "Analisis",
           tabBarIcon: () => (
             <View
               style={{
@@ -119,7 +141,7 @@ function TabNavigator() {
                 shadowRadius: 24,
               }}
             >
-              <Text style={{ fontSize: 24 }}>🎙️</Text>
+              <ScanSearch color="#3E2E22" size={24} />
             </View>
           ),
           tabBarLabelStyle: {
@@ -210,22 +232,22 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <UserProvider>
-        <LansiaProvider>
-          <ScamProvider>
-            <ConfirmModalProvider>
-              <View
-                style={{ flex: 1, backgroundColor: "#F0EAE0" }}
-                onLayout={onLayoutRootView}
-              >
-                <NavigationContainer>
+      <View
+        style={{ flex: 1, backgroundColor: "#F0EAE0" }}
+        onLayout={onLayoutRootView}
+      >
+        <NavigationContainer>
+          <UserProvider>
+            <LansiaProvider>
+              <ScamProvider>
+                <ConfirmModalProvider>
                   <MainNavigator />
-                </NavigationContainer>
-              </View>
-            </ConfirmModalProvider>
-          </ScamProvider>
-        </LansiaProvider>
-      </UserProvider>
+                </ConfirmModalProvider>
+              </ScamProvider>
+            </LansiaProvider>
+          </UserProvider>
+        </NavigationContainer>
+      </View>
     </AuthProvider>
   );
 }

@@ -1,20 +1,25 @@
 import React, { useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Home, Shield, Bell, ChevronRight, PlayCircle, Fingerprint, Lock, Flame, ShieldCheck } from 'lucide-react-native';
+import { Home, Shield, Bell, ChevronRight, Lock, Flame, ShieldCheck, Phone, Share2, BookOpen, BarChart2 } from 'lucide-react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import VokalMascot from '../../components/Mascot';
-import { MOCK_CODEWORD, QUICK_ACTIONS, MOCK_USER } from '../../data/mock';
+import { MOCK_CODEWORD, QUICK_ACTIONS } from '../../data/mock';
+import { EMERGENCY_CONTACTS } from '../../data/emergencyContacts';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../../context/auth';
 import { useLansia } from '../../context/LansiaContext';
 import RadarModus from '../../components/ui/RadarModus';
 import { AppText } from '../../components/ui/AppText';
 
+type HomeScreenProps = {
+  navigation?: any;
+};
+
 const DAYS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 const TODAY_IDX = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { user } = useAuth();
   const { xp, level, levelName, codeword } = useUser();
   const { isLansiaMode } = useLansia();
@@ -43,7 +48,7 @@ export default function HomeScreen() {
           
           <View className="flex-row justify-between items-start">
             <View>
-              <AppText size="sm" className="text-surface/60 font-body">Selamat pagi 👋</AppText>
+              <AppText size="sm" className="text-surface/60 font-body">Selamat pagi,</AppText>
               <AppText size="3xl" className="text-white font-heading leading-tight">Hi, {userName}!</AppText>
               <View className="flex-row items-center mt-2 bg-mustard/20 rounded-full px-3 py-1 self-start">
                 <Flame color="#E8A33D" size={14} />
@@ -107,7 +112,7 @@ export default function HomeScreen() {
           <View className="p-5 bg-white border border-espresso/5 rounded-[24px]">
             <View className="flex-row justify-between items-start mb-4">
               <View className="flex-1 pr-2">
-                <AppText size="xs" className="text-espresso/70 font-display uppercase tracking-widest mb-1">🔑 Codeword Hari Ini</AppText>
+                <AppText size="xs" className="text-espresso/70 font-display uppercase tracking-widest mb-1">Codeword Hari Ini</AppText>
                 <AppText size="3xl" className="text-espresso font-heading tracking-widest">{codeword.word}</AppText>
                 <View className="flex-row items-center gap-1 mt-1 bg-olive/10 px-2 py-1 rounded-full self-start border border-olive/20">
                   <ShieldCheck color="#74822F" size={10} />
@@ -151,7 +156,7 @@ export default function HomeScreen() {
             </View>
 
             <TouchableOpacity className="mt-5 w-full bg-espresso py-4 rounded-2xl items-center flex-row justify-center gap-2">
-              <AppText className="text-white">📲</AppText>
+              <Share2 color="#FFFFFF" size={16} />
               <AppText size="sm" className="text-cream font-display">Bagikan ke Keluarga</AppText>
             </TouchableOpacity>
           </View>
@@ -185,7 +190,7 @@ export default function HomeScreen() {
           <View className="flex-row justify-between items-center mb-4">
             <View className="flex-row items-center gap-3">
               <View className="w-12 h-12 rounded-full bg-mustard/20 items-center justify-center">
-                <AppText size="xl">🎓</AppText>
+                <BookOpen color="#E8A33D" size={22} />
               </View>
               <View>
                 <AppText size="base" className="text-espresso font-heading">Akademi VOKAL</AppText>
@@ -205,7 +210,7 @@ export default function HomeScreen() {
         {/* SKOR EKSPOSUR SUARA */}
         <TouchableOpacity activeOpacity={0.9} className="mt-6 bg-olive/10 border border-olive/20 rounded-[24px] p-5 mb-6 flex-row items-center gap-4">
           <View className="w-16 h-16 rounded-full bg-olive/20 items-center justify-center">
-            <AppText size="2xl">📊</AppText>
+            <BarChart2 color="#74822F" size={28} />
           </View>
           <View className="flex-1">
             <AppText size="base" className="text-espresso font-heading mb-1">Skor Eksposur Suara</AppText>
@@ -216,6 +221,45 @@ export default function HomeScreen() {
           </View>
           <ChevronRight color="#74822F" size={20} opacity={0.5} />
         </TouchableOpacity>
+
+        {/* KONTAK DARURAT WIDGET */}
+        <View className="mt-6 mb-6">
+          <View className="flex-row items-center justify-between mb-3">
+            <View className="flex-row items-center gap-2">
+              <Phone color="#3E2E22" size={16} />
+              <AppText size="base" className="text-espresso font-heading">Kontak Darurat</AppText>
+            </View>
+            <TouchableOpacity
+              className="flex-row items-center gap-1"
+              onPress={() => navigation?.navigate('Analisis', { screen: 'KontakDarurat' })}
+            >
+              <AppText size="xs" className="text-mustard font-body">Semua</AppText>
+              <ChevronRight color="#E8A33D" size={14} />
+            </TouchableOpacity>
+          </View>
+          <View className="flex-row gap-2">
+            {EMERGENCY_CONTACTS.slice(0, 3).map(contact => (
+              <TouchableOpacity
+                key={contact.id}
+                className={`flex-1 ${contact.color} rounded-2xl py-3.5 px-2 items-center gap-1`}
+                onPress={() => Alert.alert(
+                  contact.shortName,
+                  `Hubungi ${contact.phone}?`,
+                  [
+                    { text: 'Batal', style: 'cancel' },
+                    { text: 'Telepon', onPress: () => Linking.openURL(`tel:${contact.phone}`) },
+                  ]
+                )}
+                activeOpacity={0.8}
+                accessibilityLabel={`Hubungi ${contact.shortName}`}
+              >
+                <Phone color="#FFFFFF" size={18} />
+                <AppText size="xs" className="text-white font-display">{contact.phone}</AppText>
+                <AppText size="xs" className="text-surface/80 font-body text-center" numberOfLines={1}>{contact.shortName}</AppText>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
       </ScrollView>
     </SafeAreaView>

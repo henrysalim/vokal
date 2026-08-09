@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { MOCK_USER, LEADERBOARD, LEVELS } from '../data/mock';
+import { LEVELS } from '../data/mock';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-type LeaderboardEntry = {
+export type LeaderboardEntry = {
   rank: number;
   name: string;
   score: number;
+  initials: string;
   isMe: boolean;
 };
 
@@ -15,52 +16,76 @@ type UserContextType = {
   levelName: string;
   lives: number;
   leaderboard: LeaderboardEntry[];
+  isLoadingLeaderboard: boolean;
   codeword: { word: string; expiresInHours: number; hash: string };
   familySecret: string;
   addXP: (amount: number) => void;
   reduceLife: () => void;
   resetLives: () => void;
-  updateFamilySecret: (secret: string) => void;
+  updateFamilySecret: (secret: string) => Promise<void>;
+  refreshLeaderboard: () => Promise<void>;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [xp, setXp] = useState(MOCK_USER.xp);
+  const [xp, setXp] = useState(0);
   const [lives, setLives] = useState(3);
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(LEADERBOARD);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
   const [codeword, setCodeword] = useState({ word: 'MEMUAT...', expiresInHours: 6, hash: '0x00000000' });
-  const [familySecret, setFamilySecret] = useState("VOKAL_SEC_SANTOSO_99X");
+  const [familySecret, setFamilySecret] = useState('VOKAL_DEFAULT_SECRET');
 
-  // Sync Supabase user profile & family secret if configured
+  // ─── Load from Supabase on mount ────────────────────────────────
   useEffect(() => {
-    if (isSupabaseConfigured()) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session?.user) {
-          supabase
-            .from('profiles')
-            .select('name, xp, family_id, families(family_secret)')
-            .eq('id', session.user.id)
-            .single()
-            .then(({ data, error }) => {
-              if (!error && data) {
-                if (data.xp) setXp(data.xp);
-                if (data.name) {
-                  const familyName = `Keluarga ${data.name.split(' ')[0]}`;
-                  setLeaderboard(prev => prev.map(e => e.isMe ? { ...e, name: familyName } : e));
-                }
-                if (data.families && (data.families as any).family_secret) {
-                  setFamilySecret((data.families as any).family_secret);
-                }
-              }
-            });
-        }
-      });
-    }
+    if (!isSupabaseConfigured()) return;
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
+
+      // Load this user's XP and family secret
+      supabase
+        .from('profiles')
+        .select('xp, family_id, families(family_secret)')
+        .eq('id', session.user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            if (typeof data.xp === 'number') setXp(data.xp);
+            const famAny = data.families as any;
+            if (famAny?.family_secret) {
+              setFamilySecret(famAny.family_secret);
+            }
+          }
+        });
+
+      refreshLeaderboard();
+    });
+
+    // Listen for auth changes (e.g., after login)
+    const { data: listener } = supabase.auth.onAuthStateChange((_evt, session) => {
+      if (session?.user) {
+        supabase
+          .from('profiles')
+          .select('xp, family_id, families(family_secret)')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data) {
+              if (typeof data.xp === 'number') setXp(data.xp);
+              const famAny = data.families as any;
+              if (famAny?.family_secret) setFamilySecret(famAny.family_secret);
+            }
+          });
+        refreshLeaderboard();
+      }
+    });
+
+    return () => listener.subscription.unsubscribe();
   }, []);
 
+  // ─── Generate TOTP codeword whenever familySecret changes ───────
   useEffect(() => {
-    // Generate TOTP codeword saat aplikasi dibuka atau familySecret berubah
     import('../utils/totp').then(({ generateCodeword }) => {
       generateCodeword(familySecret, 6).then(result => {
         setCodeword({ word: result.codeword, expiresInHours: result.expiresInHours, hash: result.hashHex });
@@ -68,32 +93,58 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   }, [familySecret]);
 
-  // Derive level from XP based on LEVELS array
+  // ─── Real leaderboard from Supabase ─────────────────────────────
+  const refreshLeaderboard = async () => {
+    if (!isSupabaseConfigured()) return;
+    setIsLoadingLeaderboard(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const myId = session?.user?.id;
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name, xp, avatar_initials')
+        .order('xp', { ascending: false })
+        .limit(10);
+
+      if (profiles && profiles.length > 0) {
+        const entries: LeaderboardEntry[] = profiles.map((p: any, idx: number) => ({
+          rank: idx + 1,
+          name: p.name || 'Pengguna VOKAL',
+          score: p.xp || 0,
+          initials: p.avatar_initials || (p.name ? p.name.substring(0, 2).toUpperCase() : 'VK'),
+          isMe: p.id === myId,
+        }));
+        setLeaderboard(entries);
+      } else {
+        // If no data yet, just show current user
+        if (myId) {
+          const { data: me } = await supabase.from('profiles').select('name, xp, avatar_initials').eq('id', myId).single();
+          if (me) {
+            setLeaderboard([{
+              rank: 1,
+              name: me.name || 'Pengguna VOKAL',
+              score: me.xp || xp,
+              initials: me.avatar_initials || 'VK',
+              isMe: true,
+            }]);
+          }
+        }
+      }
+    } catch {
+      // silently fail — leaderboard just stays empty
+    } finally {
+      setIsLoadingLeaderboard(false);
+    }
+  };
+
+  // ─── Derive level from XP ────────────────────────────────────────
   const currentLevelInfo = LEVELS.slice().reverse().find(l => xp >= l.minXP) || LEVELS[0];
   const level = currentLevelInfo.id;
   const levelName = currentLevelInfo.name;
 
-  // Whenever XP changes, update leaderboard
-  useEffect(() => {
-    setLeaderboard(prev => {
-      const updated = prev.map(entry => {
-        if (entry.isMe) {
-          return { ...entry, score: xp };
-        }
-        return entry;
-      });
-      
-      // Sort by score descending
-      updated.sort((a, b) => b.score - a.score);
-      
-      // Re-assign ranks
-      return updated.map((entry, index) => ({
-        ...entry,
-        rank: index + 1
-      }));
-    });
-  }, [xp]);
-
+  // ─── addXP — updates local state and persists to Supabase ───────
   const addXP = (amount: number) => {
     setXp(prev => {
       const newXp = prev + amount;
@@ -108,51 +159,49 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const reduceLife = () => {
-    setLives(prev => Math.max(0, prev - 1));
-  };
-
-  const resetLives = () => {
-    setLives(3);
-  };
+  const reduceLife = () => setLives(prev => Math.max(0, prev - 1));
+  const resetLives = () => setLives(3);
 
   const updateFamilySecret = async (secret: string) => {
     const cleanSecret = secret.trim();
-    if (cleanSecret.length > 0) {
-      setFamilySecret(cleanSecret);
+    if (cleanSecret.length === 0) return;
+    setFamilySecret(cleanSecret);
 
-      if (isSupabaseConfigured()) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          // Check if family already exists for this secret or create one
-          let { data: existingFam } = await supabase
-            .from('families')
-            .select('id')
-            .eq('family_secret', cleanSecret)
-            .single();
+    if (!isSupabaseConfigured()) return;
 
-          if (!existingFam) {
-            const { data: newFam } = await supabase
-              .from('families')
-              .insert([{ name: 'Keluarga VOKAL', family_secret: cleanSecret }])
-              .select('id')
-              .single();
-            existingFam = newFam;
-          }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
 
-          if (existingFam) {
-            await supabase
-              .from('profiles')
-              .update({ family_id: existingFam.id })
-              .eq('id', session.user.id);
-          }
-        }
-      }
+    // Find or create family with this secret
+    let { data: existingFam } = await supabase
+      .from('families')
+      .select('id')
+      .eq('family_secret', cleanSecret)
+      .single();
+
+    if (!existingFam) {
+      const { data: newFam } = await supabase
+        .from('families')
+        .insert([{ name: 'Keluarga VOKAL', family_secret: cleanSecret }])
+        .select('id')
+        .single();
+      existingFam = newFam;
+    }
+
+    if (existingFam) {
+      await supabase
+        .from('profiles')
+        .update({ family_id: existingFam.id })
+        .eq('id', session.user.id);
     }
   };
 
   return (
-    <UserContext.Provider value={{ xp, level, levelName, lives, leaderboard, codeword, familySecret, addXP, reduceLife, resetLives, updateFamilySecret }}>
+    <UserContext.Provider value={{
+      xp, level, levelName, lives, leaderboard, isLoadingLeaderboard,
+      codeword, familySecret,
+      addXP, reduceLife, resetLives, updateFamilySecret, refreshLeaderboard,
+    }}>
       {children}
     </UserContext.Provider>
   );
@@ -160,8 +209,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
 export function useUser() {
   const context = useContext(UserContext);
-  if (context === undefined) {
-    throw new Error('useUser must be used within a UserProvider');
-  }
+  if (context === undefined) throw new Error('useUser must be used within a UserProvider');
   return context;
 }
