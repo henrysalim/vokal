@@ -44,3 +44,8 @@ app-example
 /android
 
 figma-design/
+.claude
+.gemini
+AGENTS.md
+CLAUDE.md
+GEMINI.md
