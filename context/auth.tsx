@@ -5,6 +5,10 @@ import React, { createContext, useCallback, useContext, useState, useEffect } fr
 import { Alert } from 'react-native';
 import { supabase, isSupabaseConfigured } from '../src/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
 
 type User = {
   id: string;
@@ -212,25 +216,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    Alert.alert(
-      'Google Sign-In',
-      'Google OAuth akan dihubungkan ke Supabase. Masuk sebagai pengguna demo?',
-      [
-        { text: 'Batal', style: 'cancel' },
-        {
-          text: 'Demo Login',
-          onPress: () => {
-            setUser({
-              id: 'google-dummy-001',
-              name: 'Demo Pengguna',
-              email: 'vokal@vokal.id',
-              avatarInitials: 'DP',
-            });
-            setIsOnboarded(true);
-          },
-        },
-      ],
-    );
+    setIsLoading(true);
+    try {
+      if (isSupabaseConfigured()) {
+        const redirectUrl = AuthSession.makeRedirectUri({
+          scheme: 'vokal'
+        });
+
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectUrl,
+            skipBrowserRedirect: true, // Kita lewati otomatisasi redirect bawaan Supabase
+          }
+        });
+
+        if (error) {
+          Alert.alert('Gagal Google Login', error.message);
+          return;
+        }
+
+        if (data?.url) {
+          // Buka web browser native untuk Google Sign In secara paksa
+          const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+          
+          if (result.type === 'success' && result.url) {
+            let accessToken = null;
+            let refreshToken = null;
+
+            // Supabase OAuth callback biasanya mengembalikan token di fragment (#access_token=...)
+            if (result.url.includes('#')) {
+              const hash = result.url.split('#')[1];
+              const params = new URLSearchParams(hash);
+              accessToken = params.get('access_token');
+              refreshToken = params.get('refresh_token');
+            } else {
+              // Cadangan parsing via query parameter
+              const params = new URL(result.url).searchParams;
+              accessToken = params.get('access_token');
+              refreshToken = params.get('refresh_token');
+            }
+            
+            if (accessToken && refreshToken) {
+              const { error: sessionError } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken
+              });
+
+              if (sessionError) {
+                Alert.alert('Gagal Mengaitkan Sesi Google', sessionError.message);
+              } else {
+                setIsOnboarded(true);
+              }
+            } else {
+              Alert.alert('Gagal Login', 'Token otentikasi Google tidak ditemukan dalam respon.');
+            }
+          }
+        }
+      } else {
+        // Fallback Demo Login jika Supabase belum terkonfigurasi
+        setUser({
+          id: 'google-dummy-001',
+          name: 'Demo Pengguna Google',
+          email: 'google-demo@vokal.id',
+          avatarInitials: 'GG',
+        });
+        setIsOnboarded(true);
+      }
+    } catch (err: any) {
+      Alert.alert('Error Google Login', err.message || 'Terjadi kesalahan sistem.');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const signInWithEmail = useCallback(async (emailInput: string, passwordInput: string): Promise<boolean> => {
