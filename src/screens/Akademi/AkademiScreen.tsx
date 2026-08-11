@@ -583,10 +583,10 @@ function LeaderboardMini({ leaderboard, loading }: { leaderboard: any[]; loading
               {i < 3 ? <Trophy color={medals[i]} size={14} fill={medals[i]} /> : <AppText size="xs" className="text-cream/50 font-display">#{entry.rank}</AppText>}
             </View>
             <View className="w-8 h-8 rounded-full bg-surface/15 items-center justify-center mr-2">
-              <AppText size="xs" className={`font-display ${entry.isMe ? 'text-espresso' : 'text-cream'}`}>{entry.initials}</AppText>
+              <AppText size="xs" className={`font-display ${entry.isMe ? 'text-mustard' : 'text-cream'}`}>{entry.initials}</AppText>
             </View>
-            <AppText size="sm" className={`flex-1 font-heading ${entry.isMe ? 'text-espresso' : 'text-cream'}`}>{entry.name}{entry.isMe ? ' (Kamu)' : ''}</AppText>
-            <AppText size="xs" className={`font-display ${entry.isMe ? 'text-espresso' : 'text-mustard'}`}>{entry.score.toLocaleString()} XP</AppText>
+            <AppText size="sm" className={`flex-1 font-heading ${entry.isMe ? 'text-white' : 'text-cream'}`}>{entry.name}{entry.isMe ? ' (Kamu)' : ''}</AppText>
+            <AppText size="xs" className="font-display text-mustard">{entry.score.toLocaleString()} XP</AppText>
           </View>
         );
       })}

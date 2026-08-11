@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Center and scale the Mascot (200x170 SVG) inside 1024x1024 -->
+  <!-- Scale by 4.2: width = 840, height = 714. Left padding = 92, top padding = 155 -->
+  <g transform="translate(92, 155) scale(4.2)">
+    <!-- Left sound waves -->
+    <g>
+      <path d="M52 55 Q32 85 52 115" stroke="#C1592E" stroke-width="7" stroke-linecap="round" fill="none" />
+      <path d="M42 45 Q14 85 42 125" stroke="#74822F" stroke-width="7" stroke-linecap="round" fill="none" />
+      <path d="M32 35 Q-4 85 32 135" stroke="#E8A33D" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.6" />
+    </g>
+
+    <!-- Right sound waves -->
+    <g>
+      <path d="M148 55 Q168 85 148 115" stroke="#C1592E" stroke-width="7" stroke-linecap="round" fill="none" />
+      <path d="M158 45 Q186 85 158 125" stroke="#74822F" stroke-width="7" stroke-linecap="round" fill="none" />
+      <path d="M168 35 Q204 85 168 135" stroke="#E8A33D" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.6" />
+    </g>
+
+    <!-- Shield body -->
+    <path d="M100 18 L148 38 L148 88 C148 118 126 140 100 152 C74 140 52 118 52 88 L52 38 Z" fill="#E8A33D" />
+    
+    <!-- Shield shadow/highlight -->
+    <path d="M100 18 L100 152 C74 140 52 118 52 88 L52 38 Z" fill="rgba(62,46,34,0.08)" />
+    
+    <!-- Shield outline -->
+    <path d="M100 18 L148 38 L148 88 C148 118 126 140 100 152 C74 140 52 118 52 88 L52 38 Z" stroke="#3E2E22" stroke-width="5" fill="none" stroke-linejoin="round" />
+
+    <!-- Eyes -->
+    <g>
+      <circle cx="85" cy="82" r="6" fill="#3E2E22" />
+      <circle cx="115" cy="82" r="6" fill="#3E2E22" />
+    </g>
+    
+    <!-- Eye glints -->
+    <circle cx="87" cy="80" r="2" fill="white" />
+    <circle cx="117" cy="80" r="2" fill="white" />
+
+    <!-- Smile -->
+    <path d="M88 100 Q100 114 112 100" stroke="#3E2E22" stroke-width="4.5" stroke-linecap="round" fill="none" />
+
+    <!-- Cheek blush -->
+    <circle cx="76" cy="95" r="7" fill="#C1592E" opacity="0.25" />
+    <circle cx="124" cy="95" r="7" fill="#C1592E" opacity="0.25" />
+  </g>
+</svg>
