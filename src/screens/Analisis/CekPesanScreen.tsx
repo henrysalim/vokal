@@ -41,7 +41,6 @@ function ScoreRing({ score, verdict }: { score: number; verdict: string }) {
   );
 }
 
-// Contoh teks bawaan untuk demo cepat
 const SAMPLE_TEXTS = [
   {
     label: 'Contoh: Penipuan Hadiah',

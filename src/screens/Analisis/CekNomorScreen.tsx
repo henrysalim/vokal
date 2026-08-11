@@ -5,10 +5,6 @@ import { Search } from 'lucide-react-native';
 import { AppText } from '../../components/ui/AppText';
 import RadarModus from '../../components/ui/RadarModus';
 
-/**
- * CekNomorScreen — wrapper around RadarModus for checking reported scam numbers.
- * Uses the Supabase-backed scam_reports crowdsourced database.
- */
 export default function CekNomorScreen() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">

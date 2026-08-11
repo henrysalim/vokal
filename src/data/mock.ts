@@ -1,5 +1,4 @@
-// Simulasi — data contoh untuk keperluan kompetisi/demo
-// Sesuai dengan CLAUDE.md §5: Tidak ada backend, semua perilaku dimock di sini.
+
 
 export const MOCK_USER = {
   name: 'Budi Santoso',

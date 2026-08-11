@@ -1,7 +1,4 @@
-/**
- * phishingEngine.ts — Pure-JS engine untuk mendeteksi pola phishing di email dan pesan teks.
- * Tidak butuh API eksternal, berjalan 100% on-device.
- */
+
 
 export type PhishingFlag = {
   id: string;
@@ -11,15 +8,11 @@ export type PhishingFlag = {
 };
 
 export type PhishingAnalysisResult = {
-  score: number; // 0 (aman) - 100 (sangat berbahaya)
+  score: number;
   verdict: 'AMAN' | 'WASPADA' | 'BERBAHAYA';
   flags: PhishingFlag[];
   summary: string;
 };
-
-// ──────────────────────────────────────────────
-// Pola-pola berbahaya berdasarkan modus penipuan di Indonesia
-// ──────────────────────────────────────────────
 
 const URGENCY_PATTERNS = [
   'segera', 'urgent', 'darurat', 'sekarang juga', 'hari ini',
@@ -75,9 +68,6 @@ const INVESTMENT_SCAM_PATTERNS = [
   'modal kecil untung besar', 'dijamin profit',
 ];
 
-// ──────────────────────────────────────────────
-// URL Extraction
-// ──────────────────────────────────────────────
 function extractUrls(text: string): string[] {
   const urlRegex = /https?:\/\/[^\s<>"{}|\\^`\[\]]+/gi;
   return text.match(urlRegex) || [];
@@ -92,22 +82,15 @@ function extractDomains(urls: string[]): string[] {
   }).filter(Boolean);
 }
 
-// ──────────────────────────────────────────────
-// Pattern checker (case-insensitive)
-// ──────────────────────────────────────────────
 function countMatches(text: string, patterns: string[]): string[] {
   const lower = text.toLowerCase();
   return patterns.filter(p => lower.includes(p.toLowerCase()));
 }
 
-// ──────────────────────────────────────────────
-// Main analysis engine
-// ──────────────────────────────────────────────
 export function analyzeForPhishing(text: string): PhishingAnalysisResult {
   const flags: PhishingFlag[] = [];
   let score = 0;
 
-  // 1. Urgency check
   const urgencyMatches = countMatches(text, URGENCY_PATTERNS);
   if (urgencyMatches.length >= 2) {
     flags.push({
@@ -127,7 +110,6 @@ export function analyzeForPhishing(text: string): PhishingAnalysisResult {
     score += 12;
   }
 
-  // 2. Prize/lottery scam
   const prizeMatches = countMatches(text, PRIZE_SCAM_PATTERNS);
   if (prizeMatches.length > 0) {
     flags.push({
@@ -139,7 +121,6 @@ export function analyzeForPhishing(text: string): PhishingAnalysisResult {
     score += 35;
   }
 
-  // 3. Financial bait
   const financeMatches = countMatches(text, FINANCIAL_BAIT_PATTERNS);
   if (financeMatches.length >= 2) {
     flags.push({
@@ -159,7 +140,6 @@ export function analyzeForPhishing(text: string): PhishingAnalysisResult {
     score += 15;
   }
 
-  // 4. Impersonation
   const impersonationMatches = countMatches(text, IMPERSONATION_PATTERNS);
   if (impersonationMatches.length > 0) {
     flags.push({
@@ -171,10 +151,9 @@ export function analyzeForPhishing(text: string): PhishingAnalysisResult {
     score += 20;
   }
 
-  // 5. Suspicious links
   const urls = extractUrls(text);
   const domains = extractDomains(urls);
-  
+
   const shortLinks = domains.filter(d => SUSPICIOUS_LINK_PATTERNS.some(p => d.includes(p)));
   if (shortLinks.length > 0) {
     flags.push({
@@ -186,7 +165,6 @@ export function analyzeForPhishing(text: string): PhishingAnalysisResult {
     score += 25;
   }
 
-  // 6. Domain spoofing
   const spoofedDomains: string[] = [];
   for (const domain of domains) {
     for (const spoofDef of OFFICIAL_DOMAIN_SPOOFS) {
@@ -205,7 +183,6 @@ export function analyzeForPhishing(text: string): PhishingAnalysisResult {
     score += 40;
   }
 
-  // 7. Social pressure / secrecy
   const socialMatches = countMatches(text, SOCIAL_PRESSURE_PATTERNS);
   if (socialMatches.length > 0) {
     flags.push({
@@ -217,7 +194,6 @@ export function analyzeForPhishing(text: string): PhishingAnalysisResult {
     score += 15;
   }
 
-  // 8. Investment scam
   const investMatches = countMatches(text, INVESTMENT_SCAM_PATTERNS);
   if (investMatches.length >= 2) {
     flags.push({
@@ -229,7 +205,6 @@ export function analyzeForPhishing(text: string): PhishingAnalysisResult {
     score += 30;
   }
 
-  // 9. Very short with link (suspicious combo)
   if (text.length < 120 && urls.length > 0 && domains.length > 0) {
     const hasUrgency = urgencyMatches.length > 0 || prizeMatches.length > 0;
     if (hasUrgency) {
@@ -243,10 +218,8 @@ export function analyzeForPhishing(text: string): PhishingAnalysisResult {
     }
   }
 
-  // Cap score at 100
   score = Math.min(score, 100);
 
-  // Verdict
   let verdict: PhishingAnalysisResult['verdict'];
   let summary: string;
 

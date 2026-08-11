@@ -1,7 +1,4 @@
-/**
- * emergencyContacts.ts — Kontak darurat resmi Indonesia untuk fitur VOKAL.
- * Semua nomor adalah nomor resmi publik, bisa langsung dihubungi.
- */
+
 
 export type EmergencyContact = {
   id: string;
@@ -11,8 +8,8 @@ export type EmergencyContact = {
   description: string;
   category: 'kepolisian' | 'keuangan' | 'siber' | 'umum';
   icon: string;
-  color: string; // token from tailwind.config.js
-  available: string; // e.g. "24 Jam" or "Senin-Jumat 08.00-15.00"
+  color: string;
+  available: string;
 };
 
 export const EMERGENCY_CONTACTS: EmergencyContact[] = [

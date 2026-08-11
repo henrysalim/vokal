@@ -1,15 +1,7 @@
-/**
- * VOKAL Design Tokens
- * Source of truth: .claude/skills/vokal-app-design/SKILL.md §4
- *
- * NOTE: Styling uses React Native StyleSheet (not NativeWind className props) because
- * NativeWind is not yet installed in this project. Once NativeWind + tailwind.config.js
- * are set up, these tokens should be registered under theme.extend.colors and all
- * StyleSheet references replaced with className strings. — CLAUDE.md §4 exception.
- */
+
 
 export const Colors = {
-  // Core palette — pixel-sampled from reference screenshot
+
   espresso:     '#1A1512', // Anchor dark — headers, primary buttons, nav icons
   mustard:      '#F5BE4E', // Hero accent — FAB, CTAs, selected day chips
   mustardSoft:  '#F6CC6A', // Lighter hero card fills
@@ -23,7 +15,6 @@ export const Colors = {
   textMuted:    '#6E5751', // Secondary text — warm grey-brown
   warning:      '#7A2E28', // High-risk / suspicious-call state only
 
-  // Aliases for convenience
   light: {
     background: '#DEDADA',
     card:       '#FFFFFF',
@@ -43,11 +34,10 @@ export const Colors = {
 };
 
 export const Typography = {
-  // Font families — register in expo-font + tailwind.config.js fontFamily when NativeWind is set up
+
   heading: 'System', // Replace with Nunito or Plus Jakarta Sans
   body:    'System', // Replace with Inter
 
-  // Scale
   xs:   11,
   sm:   13,
   base: 16,
@@ -61,7 +51,7 @@ export const Typography = {
 };
 
 export const Spacing = {
-  // 8pt base unit
+
   1: 4,
   2: 8,
   3: 12,

@@ -12,7 +12,7 @@ export default function DashboardAnak() {
       <View className="flex-row justify-between items-center mb-3">
         <AppText size="base" className="text-espresso font-heading">Laporan Keamanan (Anak)</AppText>
       </View>
-      
+
       <View className="bg-surface rounded-2xl p-5 border border-espresso/10 shadow-sm">
         <View className="flex-row justify-between items-center mb-4">
           <View>
@@ -25,7 +25,7 @@ export default function DashboardAnak() {
         </View>
 
         {/* Demo Button to add a blocked call */}
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => addBlockedCall('Pola suara terdeteksi sangat tergesa-gesa (Indikasi Penipuan Darurat)')}
           className="bg-mustard/20 py-2 rounded-lg items-center border border-mustard/40 mb-4"
         >
@@ -34,7 +34,7 @@ export default function DashboardAnak() {
 
         <View className="bg-cream rounded-xl p-3 border border-espresso/5">
           <AppText size="xs" className="font-heading text-espresso mb-3">Log Panggilan Terakhir:</AppText>
-          
+
           {blockedCalls.length === 0 ? (
             <AppText size="xs" className="font-body text-text-muted text-center py-2 italic">Belum ada aktivitas mencurigakan.</AppText>
           ) : (

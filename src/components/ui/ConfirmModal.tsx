@@ -24,7 +24,6 @@ type ConfirmContextType = {
 
 const ConfirmContext = createContext<ConfirmContextType | undefined>(undefined);
 
-// ─── STYLES PER VARIANT ───────────────────────────────────────────────────────
 const VARIANT_CONFIGS: Record<ConfirmVariant, { btnBg: string; btnBorder: string; btnText: string; iconBg: string; iconColor: string }> = {
   mustard: {
     btnBg: 'bg-mustard',
@@ -63,7 +62,6 @@ const VARIANT_CONFIGS: Record<ConfirmVariant, { btnBg: string; btnBorder: string
   },
 };
 
-// ─── REUSABLE UI COMPONENT ─────────────────────────────────────────────────────
 export function ConfirmModalComponent({
   visible,
   options,
@@ -98,7 +96,6 @@ export function ConfirmModalComponent({
     if (onCancel) onCancel();
   };
 
-  // Render Icon based on iconType
   const renderIcon = () => {
     switch (iconType) {
       case 'share':
@@ -119,10 +116,10 @@ export function ConfirmModalComponent({
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleCancel}>
       <View className="flex-1 bg-espresso/80 justify-center items-center px-5">
-        <Animated.View 
-          entering={FadeIn.duration(150)} 
+        <Animated.View
+          entering={FadeIn.duration(150)}
           exiting={FadeOut.duration(150)}
-          className="absolute inset-0" 
+          className="absolute inset-0"
         >
           <TouchableOpacity className="w-full h-full" activeOpacity={1} onPress={handleCancel} />
         </Animated.View>
@@ -135,8 +132,8 @@ export function ConfirmModalComponent({
           <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
             {/* TOP CLOSE BUTTON */}
             <View className="items-end -mr-2 -mt-2">
-              <TouchableOpacity 
-                onPress={handleCancel} 
+              <TouchableOpacity
+                onPress={handleCancel}
                 className="w-8 h-8 rounded-full bg-espresso/5 items-center justify-center"
               >
                 <X color="#3E2E22" size={16} opacity={0.6} />
@@ -148,11 +145,11 @@ export function ConfirmModalComponent({
               <View className={`w-16 h-16 rounded-full ${config.iconBg} items-center justify-center mb-4`}>
                 {renderIcon()}
               </View>
-              
+
               <AppText size="xl" className="font-heading text-espresso text-center leading-tight">
                 {title}
               </AppText>
-              
+
               <AppText size="xs" className="font-body text-text-muted text-center mt-2 px-2 leading-relaxed">
                 {message}
               </AppText>
@@ -189,7 +186,6 @@ export function ConfirmModalComponent({
   );
 }
 
-// ─── GLOBAL PROVIDER & HOOK ───────────────────────────────────────────────────
 export function ConfirmModalProvider({ children }: { children: ReactNode }) {
   const [modalState, setModalState] = useState<{
     visible: boolean;

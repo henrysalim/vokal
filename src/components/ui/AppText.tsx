@@ -6,7 +6,6 @@ export interface AppTextProps extends TextProps {
   size?: "xs" | "sm" | "base" | "md" | "lg" | "xl" | "2xl" | "3xl";
 }
 
-// Skala font agresif untuk Mode Lansia (~1.4x - 1.6x lebih besar + ekstra tebal)
 const fontScaleMap: Record<string, { normal: string; lansia: string }> = {
   xs: { normal: "text-xs", lansia: "text-base font-bold tracking-wide" },         // 12px -> 16px (+33%)
   sm: { normal: "text-sm", lansia: "text-lg font-bold tracking-wide" },           // 14px -> 18px (+28%)
@@ -28,7 +27,6 @@ export const AppText: React.FC<AppTextProps> = ({
   const scale = fontScaleMap[size] || fontScaleMap.base;
   const fontClass = isLansiaMode ? scale.lansia : scale.normal;
 
-  // Filter out any conflicting explicit Tailwind font-size classes passed in className
   const cleanClassName = className
     .replace(/\btext-(xs|sm|base|md|lg|xl|2xl|3xl|4xl|5xl)\b/g, "")
     .trim();

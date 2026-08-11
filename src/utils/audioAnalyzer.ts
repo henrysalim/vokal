@@ -1,7 +1,4 @@
-/**
- * Lightweight DSP (Digital Signal Processing) Acoustic Analyzer
- * Pure JavaScript rule-based engine running 100% on-device (0ms latency, offline-ready).
- */
+
 
 export type DspAnalysisResult = {
   urgencyScore: number;
@@ -24,20 +21,17 @@ export function analyzeLocalDSP(meteringData: number[]): DspAnalysisResult {
     };
   }
 
-  // 1. Calculate Mean (Average Volume in dB)
   let sum = 0;
   meteringData.forEach(m => (sum += m));
   const avgVolume = sum / meteringData.length;
 
-  // 2. Calculate Standard Deviation (Volume Variance / Monotonicity)
   let squaredDiffSum = 0;
   meteringData.forEach(m => {
     squaredDiffSum += Math.pow(m - avgVolume, 2);
   });
   const stdDev = Math.sqrt(squaredDiffSum / meteringData.length);
 
-  // 3. Silence Gap Detection (Counting natural breath pauses)
-  const SILENCE_THRESHOLD = -45; // Below -45dB is considered silence/ambient
+  const SILENCE_THRESHOLD = -45;
   let silenceFrames = 0;
   let totalSilenceGaps = 0;
 
@@ -46,14 +40,13 @@ export function analyzeLocalDSP(meteringData: number[]): DspAnalysisResult {
       silenceFrames++;
     } else {
       if (silenceFrames >= 3) {
-        // 3 frames * 100ms = 300ms gap (typical breath pause)
+
         totalSilenceGaps++;
       }
       silenceFrames = 0;
     }
   }
 
-  // 4. Syllable Rhythm & Energy Peaks
   let peaks = 0;
   for (let i = 1; i < meteringData.length - 1; i++) {
     if (
@@ -65,36 +58,30 @@ export function analyzeLocalDSP(meteringData: number[]): DspAnalysisResult {
     }
   }
 
-  // --- Rule-Based Urgency Scoring ---
   let baseScore = 18.0;
 
-  // Rule 1: High Speech Pressure (Aggressive yelling / loud pitch)
   if (avgVolume > -20) {
     baseScore += 25;
   }
 
-  // Rule 2: Absence of Breath Gaps (Robot / Torrential pacing)
   if (totalSilenceGaps === 0) {
     baseScore += 35;
   } else if (totalSilenceGaps <= 2 && peaks >= 8) {
     baseScore += 30;
   }
 
-  // Rule 3: Extreme Monotonicity (Low StdDev) vs Erratic Chaos
   if (stdDev < 8) {
-    baseScore += 20; // Monotone TTS/synthetic artifact
+    baseScore += 20;
   } else if (stdDev > 25 && peaks > 12) {
-    baseScore += 25; // Erratic noise
+    baseScore += 25;
   }
 
-  // Rule 4: Pacing Pikes
   if (peaks > 10) {
     baseScore += 20;
   } else if (peaks < 2) {
     baseScore += 15;
   }
 
-  // Add small decimal variance for UX realism
   let finalScore = baseScore + (meteringData.length % 7) * 0.3;
   if (finalScore > 98.7) finalScore = 98.7;
   if (finalScore < 4.2) finalScore = 4.2;

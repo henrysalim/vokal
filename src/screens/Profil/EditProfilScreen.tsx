@@ -26,7 +26,6 @@ export default function EditProfilScreen() {
     .slice(0, 2)
     .toUpperCase() || 'VK';
 
-  // 📸 Pilih Foto dari Galeri HP
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -87,7 +86,7 @@ export default function EditProfilScreen() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
       <ScrollView className="flex-1 px-5 pt-2" contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        
+
         {/* HEADER */}
         <View className="flex-row items-center justify-between my-4">
           <TouchableOpacity

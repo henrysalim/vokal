@@ -5,8 +5,8 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export type ScamReport = {
   id: string;
-  phoneHash: string; // Hashed to preserve privacy (GetContact-style)
-  phonePrefix: string; // e.g., "+62 858-xxx"
+  phoneHash: string;
+  phonePrefix: string;
   type: string;
   location: string;
   timestamp: number;
@@ -45,7 +45,6 @@ export function ScamProvider({ children }: { children: ReactNode }) {
   const [myReports, setMyReports] = useState<ScamReport[]>([]);
   const [blockedCalls, setBlockedCalls] = useState<BlockedCall[]>([]);
 
-  // Load from Supabase DB or fallback to AsyncStorage
   useEffect(() => {
     loadData();
   }, []);
@@ -85,7 +84,7 @@ export function ScamProvider({ children }: { children: ReactNode }) {
           setBlockedCalls(mappedBlocked);
         }
       } else {
-        // Fallback to AsyncStorage
+
         const storedScams = await AsyncStorage.getItem(SCAM_DATA_KEY);
         const storedBlocked = await AsyncStorage.getItem(BLOCKED_CALLS_KEY);
 
@@ -149,7 +148,6 @@ export function ScamProvider({ children }: { children: ReactNode }) {
       cleanPhone
     );
 
-    // Try DB match if configured
     let matchedReports = localScams.filter(report => report.phoneHash === hashToCheck);
 
     if (isSupabaseConfigured() && matchedReports.length === 0) {

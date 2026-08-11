@@ -24,8 +24,6 @@ import { SIM_SCENARIOS, SimScenario } from '../../data/simScamData';
 
 const { width, height } = Dimensions.get('window');
 
-// ─── MODULE DATA ─────────────────────────────────────────────────────
-// Setiap modul unlock setelah modul sebelumnya selesai
 type ModuleType = 'done' | 'active' | 'locked' | 'chest';
 
 type Module = {
@@ -121,7 +119,6 @@ const BASE_MODULES: Omit<Module, 'type'>[] = [
   },
 ];
 
-// ─── NODE ICON ────────────────────────────────────────────────────────
 function NodeIcon({ icon, color, size = 28 }: { icon: Module['icon']; color: string; size?: number }) {
   switch (icon) {
     case 'mic': return <Mic color={color} size={size} strokeWidth={2.5} />;
@@ -133,7 +130,6 @@ function NodeIcon({ icon, color, size = 28 }: { icon: Module['icon']; color: str
   }
 }
 
-// ─── QUIZ SESSION ─────────────────────────────────────────────────────
 function QuizSession({
   questions, lives, onClose, onComplete, onReduceLife,
 }: {
@@ -324,7 +320,6 @@ function QuizSession({
   );
 }
 
-// ─── SIM SESSION ──────────────────────────────────────────────────────
 function SimSession({
   scenario, lives, onClose, onComplete, onReduceLife,
 }: {
@@ -470,7 +465,6 @@ function SimSession({
   );
 }
 
-// ─── NODE COMPONENT ───────────────────────────────────────────────────
 function PathNode({
   mod, index, onPress, bounceAnim,
 }: {
@@ -488,7 +482,6 @@ function PathNode({
     transform: [{ translateY: bounceAnim && isActive ? bounceAnim.value : 0 }],
   }));
 
-  // Offset sinusoidal
   const offsetX = Math.sin(index * 1.4) * (width * 0.22);
 
   const nodeBg = isDone
@@ -569,7 +562,6 @@ function PathNode({
   );
 }
 
-// ─── LEADERBOARD MINI ─────────────────────────────────────────────────
 function LeaderboardMini({ leaderboard, loading }: { leaderboard: any[]; loading: boolean }) {
   if (loading) return (
     <View className="py-4 items-center">
@@ -602,7 +594,6 @@ function LeaderboardMini({ leaderboard, loading }: { leaderboard: any[]; loading
   );
 }
 
-// ─── MAIN SCREEN ──────────────────────────────────────────────────────
 export default function AkademiScreen() {
   const [showPath, setShowPath] = useState(false);
   const [selectedMod, setSelectedMod] = useState<Module | null>(null);
@@ -615,7 +606,6 @@ export default function AkademiScreen() {
   const { xp, level, levelName, lives, leaderboard, isLoadingLeaderboard, addXP, reduceLife, resetLives, refreshLeaderboard } = useUser();
   const { user } = useAuth();
 
-  // Bounce for active node
   const bounceAnim = useSharedValue(0);
   React.useEffect(() => {
     bounceAnim.value = withRepeat(
@@ -626,7 +616,6 @@ export default function AkademiScreen() {
     );
   }, []);
 
-  // Build modules with type based on completedIds
   const modules: Module[] = BASE_MODULES.map((m, i) => {
     const isDone = completedIds.has(m.id);
     const prevDone = i === 0 || completedIds.has(BASE_MODULES[i - 1].id);
@@ -687,7 +676,6 @@ export default function AkademiScreen() {
   const currentSim = activeSimId ? SIM_SCENARIOS.find(s => s.id === activeSimId) : null;
   const quizQs = activeQuizCategory ? QUIZ_QUESTIONS.filter(q => q.category === activeQuizCategory) : [];
 
-  // ── LANDING VIEW ────────────────────────────────────────────────────
   if (!showPath) {
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-cream">
@@ -779,7 +767,6 @@ export default function AkademiScreen() {
     );
   }
 
-  // ── PATH VIEW ───────────────────────────────────────────────────────
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
       {/* Path Header */}

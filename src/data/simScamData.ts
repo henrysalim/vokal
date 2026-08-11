@@ -1,18 +1,15 @@
-/**
- * simScamData.ts — Data skenario Simulasi Telepon Scam interaktif.
- * User diposisikan sebagai korban, harus memilih respons yang tepat di setiap giliran.
- */
+
 
 export type SimStep = {
   id: string;
   speaker: 'scammer' | 'you';
-  scammerLine: string; // Apa yang "penipu" katakan
+  scammerLine: string;
   options: Array<{
     id: string;
-    text: string; // Respons pilihan user
+    text: string;
     isCorrect: boolean;
     feedback: string;
-    xpDelta: number; // positif = dapat XP, negatif = kehilangan nyawa
+    xpDelta: number;
   }>;
 };
 
@@ -21,13 +18,13 @@ export type SimScenario = {
   title: string;
   difficulty: 'mudah' | 'sedang' | 'sulit';
   description: string;
-  context: string; // Konteks situasi sebelum telepon masuk
+  context: string;
   steps: SimStep[];
   totalXP: number;
 };
 
 export const SIM_SCENARIOS: SimScenario[] = [
-  // ─── SKENARIO 1: Kecelakaan Anak (Mudah) ──────────────────────
+
   {
     id: 'sim_1',
     title: 'Telepon Kecelakaan Darurat',
@@ -123,7 +120,6 @@ export const SIM_SCENARIOS: SimScenario[] = [
     ],
   },
 
-  // ─── SKENARIO 2: Penipuan OJK/Pinjol (Sedang) ─────────────────
   {
     id: 'sim_2',
     title: 'Telepon Palsu Petugas OJK',
@@ -219,7 +215,6 @@ export const SIM_SCENARIOS: SimScenario[] = [
     ],
   },
 
-  // ─── SKENARIO 3: Kloning Suara Anak (Sulit) ───────────────────
   {
     id: 'sim_3',
     title: 'Kloning Suara — Level Expert',

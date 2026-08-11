@@ -1,9 +1,4 @@
-/**
- * TabLayout — VOKAL
- * Bottom navigation with 2 placeholder tabs (Home, Explore).
- * Colors follow the VOKAL design token set (mustard active, textMuted inactive).
- * Will be expanded to the full 4-tab + mustard FAB layout per SKILL.md §6.
- */
+
 import { Tabs } from 'expo-router';
 import React from 'react';
 

@@ -19,7 +19,7 @@ WebBrowser.maybeCompleteAuthSession();
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '';
 const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
 
-const GMAIL_FETCH_LIMIT = 10; // Jumlah email yang di-scan
+const GMAIL_FETCH_LIMIT = 10;
 
 function FlagCard({ flag }: { flag: PhishingFlag }) {
   const borderColor = flag.level === 'danger' ? 'border-terracotta/40' : flag.level === 'warning' ? 'border-mustard/40' : 'border-olive/40';
@@ -56,6 +56,7 @@ function ScoreRing({ score, verdict }: { score: number; verdict: string }) {
 }
 
 export default function CekEmailScreen() {
+  const { connectGoogle, ensureFreshToken, disconnectGoogle, googleAccessToken } = useGoogleAuth();
   const [mode, setMode] = useState<'choose' | 'manual' | 'gmail'>('choose');
   const [manualText, setManualText] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -64,51 +65,24 @@ export default function CekEmailScreen() {
   const [gmailEmails, setGmailEmails] = useState<Array<{ subject: string; snippet: string; from: string }>>([]);
   const [scannedCount, setScannedCount] = useState(0);
 
-  // ──────────────────────────────────────────────
-  // GMAIL OAUTH using expo-auth-session
-  // ──────────────────────────────────────────────
-  const discovery = {
-    authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-    tokenEndpoint: 'https://oauth2.googleapis.com/token',
-  };
-
-  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'vokal' });
-
-  const [authRequest, authResponse, promptAsync] = AuthSession.useAuthRequest(
-    {
-      clientId: GOOGLE_CLIENT_ID,
-      scopes: GMAIL_SCOPES,
-      redirectUri,
-      responseType: AuthSession.ResponseType.Token,
-      usePKCE: false,
-    },
-    discovery
-  );
-
-  // Handle OAuth response
-  React.useEffect(() => {
-    if (authResponse?.type === 'success') {
-      const accessToken = authResponse.params?.access_token;
-      if (accessToken) {
-        fetchAndAnalyzeGmail(accessToken);
-      }
-    } else if (authResponse?.type === 'error') {
-      setIsConnectingGmail(false);
-      Alert.alert('Gagal Login Google', authResponse.error?.message || 'Silakan coba lagi.');
-    }
-  }, [authResponse]);
-
   const handleConnectGmail = async () => {
-    if (!GOOGLE_CLIENT_ID) {
-      Alert.alert(
-        'Client ID Belum Dikonfigurasi',
-        'Tambahkan EXPO_PUBLIC_GOOGLE_CLIENT_ID ke file .env kamu. Lihat panduan setup di README.\n\nSementara itu, gunakan mode "Tempel Teks" untuk analisis manual.',
-        [{ text: 'OK' }]
-      );
-      return;
+    try {
+      setIsConnectingGmail(true);
+      let token = googleAccessToken;
+      if (!token) {
+        token = await connectGoogle();
+      } else {
+        token = await ensureFreshToken();
+      }
+
+      if (token) {
+        await fetchAndAnalyzeGmail(token);
+      }
+    } catch (err: any) {
+      Alert.alert('Gagal Hubungkan Gmail', err.message || 'Silakan coba lagi.');
+    } finally {
+      setIsConnectingGmail(false);
     }
-    setIsConnectingGmail(true);
-    await promptAsync();
   };
 
   const fetchAndAnalyzeGmail = async (accessToken: string) => {
@@ -116,15 +90,18 @@ export default function CekEmailScreen() {
       setIsConnectingGmail(true);
       setMode('gmail');
 
-      // Fetch email list
       const listRes = await fetch(
         `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${GMAIL_FETCH_LIMIT}&labelIds=INBOX`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       const listJson = await listRes.json();
+
+      if (listJson.error) {
+        throw new Error(listJson.error.message || 'Gagal mengakses API Gmail.');
+      }
+
       const messages: Array<{ id: string }> = listJson.messages || [];
 
-      // Fetch details for each message
       const emailDetails: Array<{ subject: string; snippet: string; from: string; body: string }> = [];
       for (const msg of messages.slice(0, GMAIL_FETCH_LIMIT)) {
         const msgRes = await fetch(
@@ -142,7 +119,6 @@ export default function CekEmailScreen() {
       setGmailEmails(emailDetails.map(e => ({ subject: e.subject, snippet: e.snippet, from: e.from })));
       setScannedCount(emailDetails.length);
 
-      // Combine all text for analysis
       const combinedText = emailDetails.map(e => e.body).join('\n\n');
       const analysis = analyzeForPhishing(combinedText);
       setResult(analysis);
@@ -174,9 +150,6 @@ export default function CekEmailScreen() {
     setMode('choose');
   };
 
-  // ──────────────────────────────────────────────
-  // RENDER: Result View
-  // ──────────────────────────────────────────────
   if (result) {
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-cream">
@@ -235,9 +208,6 @@ export default function CekEmailScreen() {
     );
   }
 
-  // ──────────────────────────────────────────────
-  // RENDER: Loading Gmail
-  // ──────────────────────────────────────────────
   if (isConnectingGmail) {
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-cream items-center justify-center px-8">
@@ -250,9 +220,6 @@ export default function CekEmailScreen() {
     );
   }
 
-  // ──────────────────────────────────────────────
-  // RENDER: Choose Mode
-  // ──────────────────────────────────────────────
   if (mode === 'choose') {
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-cream">
@@ -332,9 +299,6 @@ export default function CekEmailScreen() {
     );
   }
 
-  // ──────────────────────────────────────────────
-  // RENDER: Manual Text Input
-  // ──────────────────────────────────────────────
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
       <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 120 }}>

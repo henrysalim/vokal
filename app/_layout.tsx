@@ -1,18 +1,9 @@
-/**
- * RootLayout — VOKAL
- *
- * Wraps the app with AuthProvider and declares all Stack routes.
- * Navigation is handled declaratively with <Redirect> inside RootLayoutNav,
- * NOT with router.replace() in a useEffect — doing so causes the
- * "Attempted to navigate before mounting the Root Layout" error in Expo Router.
- */
+
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/context/auth';
-
-// ─── Inner layout — reads auth context ────────────────────────────────────────
 
 function RootLayoutNav() {
   const { user, isOnboarded } = useAuth();
@@ -44,8 +35,6 @@ function RootLayoutNav() {
     </>
   );
 }
-
-// ─── Root — provides context ───────────────────────────────────────────────────
 
 export default function RootLayout() {
   return (

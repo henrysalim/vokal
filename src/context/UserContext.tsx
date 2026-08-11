@@ -36,14 +36,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [codeword, setCodeword] = useState({ word: 'MEMUAT...', expiresInHours: 6, hash: '0x00000000' });
   const [familySecret, setFamilySecret] = useState('VOKAL_DEFAULT_SECRET');
 
-  // ─── Load from Supabase on mount ────────────────────────────────
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) return;
 
-      // Load this user's XP and family secret
       supabase
         .from('profiles')
         .select('xp, family_id, families(family_secret)')
@@ -62,7 +60,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       refreshLeaderboard();
     });
 
-    // Listen for auth changes (e.g., after login)
     const { data: listener } = supabase.auth.onAuthStateChange((_evt, session) => {
       if (session?.user) {
         supabase
@@ -84,7 +81,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // ─── Generate TOTP codeword whenever familySecret changes ───────
   useEffect(() => {
     import('../utils/totp').then(({ generateCodeword }) => {
       generateCodeword(familySecret, 6).then(result => {
@@ -93,7 +89,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   }, [familySecret]);
 
-  // ─── Real leaderboard from Supabase ─────────────────────────────
   const refreshLeaderboard = async () => {
     if (!isSupabaseConfigured()) return;
     setIsLoadingLeaderboard(true);
@@ -118,7 +113,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }));
         setLeaderboard(entries);
       } else {
-        // If no data yet, just show current user
+
         if (myId) {
           const { data: me } = await supabase.from('profiles').select('name, xp, avatar_initials').eq('id', myId).single();
           if (me) {
@@ -139,12 +134,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // ─── Derive level from XP ────────────────────────────────────────
   const currentLevelInfo = LEVELS.slice().reverse().find(l => xp >= l.minXP) || LEVELS[0];
   const level = currentLevelInfo.id;
   const levelName = currentLevelInfo.name;
 
-  // ─── addXP — updates local state and persists to Supabase ───────
   const addXP = (amount: number) => {
     setXp(prev => {
       const newXp = prev + amount;
@@ -172,7 +165,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
-    // Find or create family with this secret
     let { data: existingFam } = await supabase
       .from('families')
       .select('id')

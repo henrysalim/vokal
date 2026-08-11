@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
-import { Radar, AlertTriangle, ShieldCheck, Search, PlusCircle, X, Share2, CheckCircle } from 'lucide-react-native';
+import { Radar, AlertTriangle, ShieldCheck, Search, PlusCircle, X, Share2 } from 'lucide-react-native';
 import { useScamContext, ScamReport, CheckResult } from '../../context/ScamContext';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -12,14 +12,13 @@ export default function RadarModus() {
   const [phoneInput, setPhoneInput] = useState('');
   const [locationInput, setLocationInput] = useState('');
   const [scamType, setScamType] = useState('Kecelakaan Anak');
-  
+
   const [checkInput, setCheckInput] = useState('');
   const [checkDetails, setCheckDetails] = useState<CheckResult | null>(null);
 
-  // Share Card state
   const [showShareCard, setShowShareCard] = useState(false);
   const [latestReport, setLatestReport] = useState<ScamReport | null>(null);
-  const viewShotRef = React.useRef(null);
+  const viewShotRef = React.useRef<any>(null);
 
   const handleReport = async () => {
     if (phoneInput.length < 8) {
@@ -30,9 +29,9 @@ export default function RadarModus() {
       Alert.alert('Gagal', 'Lokasi (Kecamatan/Kota) wajib diisi.');
       return;
     }
-    
+
     await reportScam(phoneInput, scamType, locationInput);
-    
+
     const clean = phoneInput.replace(/[^0-9+]/g, '');
     const prefix = clean.length > 6 ? clean.substring(0, 6) + '-xxx' : clean + '-xxx';
     setLatestReport({
@@ -47,14 +46,14 @@ export default function RadarModus() {
     setModalVisible(false);
     setPhoneInput('');
     setLocationInput('');
-    
+
     setTimeout(() => setShowShareCard(true), 500);
   };
 
   const shareCard = async () => {
     try {
       if (viewShotRef.current) {
-        // @ts-ignore
+
         const uri = await viewShotRef.current.capture();
         const isAvailable = await Sharing.isAvailableAsync();
         if (isAvailable) {
@@ -95,17 +94,17 @@ export default function RadarModus() {
 
       {/* Cek Nomor */}
       <View className="flex-row items-center bg-cream rounded-xl p-2 mb-4 border border-espresso/10">
-        <TextInput 
+        <TextInput
           placeholder="Cek nomor mencurigakan..."
           keyboardType="phone-pad"
-          className="flex-1 font-body text-xs ml-2 h-8 text-espresso"
+          className="flex-1 font-body text-sm ml-2 py-2 text-espresso"
           value={checkInput}
           onChangeText={(t) => {
             setCheckInput(t);
             setCheckDetails(null);
           }}
         />
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={handleCheck}
           className="bg-espresso p-2 rounded-lg"
         >
@@ -128,7 +127,7 @@ export default function RadarModus() {
           )}
         </View>
       )}
-      
+
       {checkDetails && !checkDetails.isScam && (
         <View className="bg-olive/20 p-3 rounded-xl mb-4 flex-row items-center gap-2 border border-olive/30">
           <ShieldCheck color="#74822F" size={16} />
@@ -139,7 +138,7 @@ export default function RadarModus() {
       {/* List Radar Lokal */}
       <View className="bg-cream p-3 rounded-xl">
         <AppText size="xs" className="text-espresso font-heading mb-3">Terdeteksi di Sekitarmu ({localScams.length}):</AppText>
-        
+
         {localScams.length === 0 ? (
           <AppText size="xs" className="text-text-muted font-body text-center italic py-2">
             Belum ada data di lokasimu. Jadilah yang pertama melaporkan untuk melindungi komunitas!
@@ -175,9 +174,9 @@ export default function RadarModus() {
               <AppText size="xs" className="font-body text-text-muted mb-2">
                 Nomor akan di-Hash (enkripsi) sebelum disimpan untuk menjaga privasi sesuai standar perlindungan data.
               </AppText>
-              
+
               <AppText size="sm" className="font-heading text-espresso mb-1 mt-4">Nomor Penelepon</AppText>
-              <TextInput 
+              <TextInput
                 keyboardType="phone-pad"
                 placeholder="Misal: 0812345678"
                 className="bg-cream p-4 rounded-xl font-body text-espresso border border-espresso/10"
@@ -186,7 +185,7 @@ export default function RadarModus() {
               />
 
               <AppText size="sm" className="font-heading text-espresso mb-1 mt-4">Lokasi (Kecamatan/Kota)</AppText>
-              <TextInput 
+              <TextInput
                 placeholder="Misal: Kebayoran Baru, Jakarta"
                 className="bg-cream p-4 rounded-xl font-body text-espresso border border-espresso/10"
                 value={locationInput}
@@ -196,7 +195,7 @@ export default function RadarModus() {
               <AppText size="sm" className="font-heading text-espresso mb-2 mt-4">Jenis Modus</AppText>
               <View className="flex-row flex-wrap gap-2 mb-6">
                 {['Kecelakaan Anak', 'Transfer Darurat', 'Suara AI/Kloning', 'Lainnya'].map(type => (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     key={type}
                     onPress={() => setScamType(type)}
                     className={`px-4 py-2 rounded-full border ${scamType === type ? 'bg-terracotta border-terracotta' : 'bg-cream border-espresso/20'}`}
@@ -206,7 +205,7 @@ export default function RadarModus() {
                 ))}
               </View>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={handleReport}
                 className="bg-terracotta py-4 rounded-xl items-center border-b-4 border-[#A3431D]"
               >
@@ -227,27 +226,27 @@ export default function RadarModus() {
                   <ShieldCheck color="#C1592E" size={32} />
                 </View>
                 <AppText size="xl" className="font-heading text-espresso text-center mb-2">Saya Baru Saja Menghindari Penipuan!</AppText>
-                
+
                 <View className="bg-white w-full rounded-xl p-4 my-4 border border-espresso/10 shadow-sm">
                   <AppText size="sm" className="font-heading text-terracotta mb-1">Modus yang dihindari:</AppText>
                   <AppText size="base" className="font-body text-espresso mb-3 font-bold">{latestReport?.type}</AppText>
-                  
+
                   <AppText size="sm" className="font-heading text-terracotta mb-1">Nomor Pelaku:</AppText>
                   <AppText size="base" className="font-body text-espresso mb-3 font-bold">{latestReport?.phonePrefix}</AppText>
-                  
+
                   <AppText size="sm" className="font-heading text-terracotta mb-1">Target Area:</AppText>
                   <AppText size="base" className="font-body text-espresso font-bold">{latestReport?.location}</AppText>
                 </View>
 
                 <AppText size="xs" className="font-body text-text-muted text-center mt-2 px-4">
-                  Laporan ini telah dienkripsi dan masuk ke Radar Modus VOKAL untuk melindungi komunitas. 
+                  Laporan ini telah dienkripsi dan masuk ke Radar Modus VOKAL untuk melindungi komunitas.
                   #AntiScam #BukanSuaramuBukanUangmu
                 </AppText>
               </View>
             </ViewShot>
 
             <View className="w-full mt-6 gap-3">
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={shareCard}
                 className="w-full bg-mustard py-4 rounded-xl items-center flex-row justify-center gap-2 border-b-4 border-[#d49232]"
               >
@@ -255,7 +254,7 @@ export default function RadarModus() {
                 <AppText size="base" className="text-espresso font-heading">Bagikan ke Status WhatsApp</AppText>
               </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setShowShareCard(false)}
                 className="w-full py-4 items-center"
               >

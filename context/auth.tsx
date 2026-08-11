@@ -1,6 +1,4 @@
-/**
- * AuthContext — VOKAL Auth state (Supports Supabase Auth & Local Demo Mode)
- */
+
 import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { supabase, isSupabaseConfigured } from '../src/lib/supabase';
@@ -52,7 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const initials = profile?.avatar_initials || name.substring(0, 2).toUpperCase();
       const avatarUrl = profile?.avatar_url || null;
 
-      // Upsert profile safely once authenticated
       if (!profile) {
         await supabase.from('profiles').upsert({
           id: userId,
@@ -86,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const onboardedVal = await AsyncStorage.getItem('@vokal_onboarded');
         const hasOnBoardedFlag = onboardedVal === 'true';
-        
+
         if (isSupabaseConfigured()) {
           const {data: {session}} = await supabase.auth.getSession();
           if (session?.user) {
@@ -170,7 +167,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Update local user state
         setUser({
           ...user,
           name: cleanName,
@@ -192,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isSupabaseConfigured()) {
-      // Check active Supabase session
+
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session?.user) {
           const u = session.user;
@@ -237,26 +233,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (data?.url) {
-          // Buka web browser native untuk Google Sign In secara paksa
+
           const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
-          
+
           if (result.type === 'success' && result.url) {
             let accessToken = null;
             let refreshToken = null;
 
-            // Supabase OAuth callback biasanya mengembalikan token di fragment (#access_token=...)
             if (result.url.includes('#')) {
               const hash = result.url.split('#')[1];
               const params = new URLSearchParams(hash);
               accessToken = params.get('access_token');
               refreshToken = params.get('refresh_token');
             } else {
-              // Cadangan parsing via query parameter
+
               const params = new URL(result.url).searchParams;
               accessToken = params.get('access_token');
               refreshToken = params.get('refresh_token');
             }
-            
+
             if (accessToken && refreshToken) {
               const { error: sessionError } = await supabase.auth.setSession({
                 access_token: accessToken,
@@ -274,7 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } else {
-        // Fallback Demo Login jika Supabase belum terkonfigurasi
+
         setUser({
           id: 'google-dummy-001',
           name: 'Demo Pengguna Google',
@@ -319,7 +314,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         return false;
       } else {
-        // Fallback Demo mode
+
         await new Promise((r) => setTimeout(r, 400));
         if (cleanEmail.includes('@') && cleanPassword.length >= 3) {
           const name = cleanEmail.split('@')[0].toUpperCase();
@@ -373,7 +368,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (data.user) {
             const initials = cleanName.substring(0, 2).toUpperCase();
 
-            // Try auto-signin if email confirmation is disabled in Supabase
             const { data: signInData } = await supabase.auth.signInWithPassword({
               email: cleanEmail,
               password: cleanPassword,
@@ -421,7 +415,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const {error} = await supabase.auth.signOut();
         if (error) {
           console.error("Gagal signOUt dari Supabase: ", error.message)
-        } 
+        }
       }
     } catch (err) {
       console.error("Error saat logout: ", err);

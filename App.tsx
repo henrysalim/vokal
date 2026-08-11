@@ -24,7 +24,6 @@ import OnboardingScreen from "./src/screens/Onboarding/OnboardingScreen";
 import ProfilScreen from "./src/screens/Profil/ProfilScreen";
 import EditProfilScreen from "./src/screens/Profil/EditProfilScreen";
 
-// Analisis Hub & sub-screens
 import AnalisisHubScreen from "./src/screens/Analisis/AnalisisHubScreen";
 import CekEmailScreen from "./src/screens/Analisis/CekEmailScreen";
 import CekPesanScreen from "./src/screens/Analisis/CekPesanScreen";
@@ -58,7 +57,6 @@ const fontScaleMap = {
   "3xl": { normal: "text-3xl", lansia: "text-4xl font-extrabold" },
 };
 
-// Nested stack navigator for the Analisis tab
 function AnalisisNavigator() {
   return (
     <AnalisisStack.Navigator screenOptions={{ headerShown: false }}>

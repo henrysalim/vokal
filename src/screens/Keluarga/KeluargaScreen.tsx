@@ -3,21 +3,21 @@ import { View, ScrollView, TouchableOpacity, Modal, TextInput, Share, Alert, Act
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeOut, FadeInDown, Layout } from 'react-native-reanimated';
-import { 
-  Users, 
-  BellRing, 
-  ShieldCheck, 
-  ChevronDown, 
-  ChevronUp, 
-  AlertCircle, 
-  PlusCircle, 
-  KeyRound, 
-  X, 
-  Contact, 
-  Search, 
-  Check, 
-  UserPlus, 
-  CheckSquare, 
+import {
+  Users,
+  BellRing,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  PlusCircle,
+  KeyRound,
+  X,
+  Contact,
+  Search,
+  Check,
+  UserPlus,
+  CheckSquare,
   Square
 } from 'lucide-react-native';
 import * as Contacts from 'expo-contacts';
@@ -30,7 +30,6 @@ import { AppText } from '../../components/ui/AppText';
 
 type ContactItem = Contacts.Contact & { id?: string };
 
-// Fallback contacts for simulator / demo mode
 const MOCK_FALLBACK_CONTACTS: ContactItem[] = [
   { id: 'c1', contactType: Contacts.ContactTypes.Person, name: 'Nenek Maryam', phoneNumbers: [{ number: '+62 813-9876-5432', label: 'Seluler' }] },
   { id: 'c2', contactType: Contacts.ContactTypes.Person, name: 'Kakek Budi', phoneNumbers: [{ number: '+62 812-3456-7890', label: 'Seluler' }] },
@@ -65,7 +64,6 @@ export default function KeluargaScreen() {
   const [showSeedModal, setShowSeedModal] = useState(false);
   const [tempSeed, setTempSeed] = useState('');
 
-  // Filter & Selection states
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'uninvited'>('all');
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
@@ -105,7 +103,6 @@ export default function KeluargaScreen() {
     }
   };
 
-  // Helper to sanitize contact names from system metadata (e.g. "null null", "undefined", etc.)
   const sanitizeString = useCallback((str?: string | null) => {
     if (!str) return '';
     return str.replace(/null|undefined/gi, '').trim();
@@ -128,19 +125,17 @@ export default function KeluargaScreen() {
     return 'Tanpa Nama';
   }, [sanitizeString]);
 
-  // Filter contacts based on search query and uninvited filter
   const filteredContacts = useMemo(() => {
     return deviceContacts.filter(contact => {
       const cleanName = sanitizeString(contact.name);
       const cleanFirst = sanitizeString(contact.firstName);
-      const cleanPhone = contact.phoneNumbers && contact.phoneNumbers.length > 0 
-        ? sanitizeString(contact.phoneNumbers[0].number) 
+      const cleanPhone = contact.phoneNumbers && contact.phoneNumbers.length > 0
+        ? sanitizeString(contact.phoneNumbers[0].number)
         : '';
 
       const hasValidName = cleanName.length > 0 || cleanFirst.length > 0;
       const hasValidPhone = cleanPhone.length > 0;
 
-      // Ignore corrupted / metadata-only system contacts (e.g., "null null" without phone number)
       if (!hasValidName && !hasValidPhone) return false;
 
       const displayName = getCleanName(contact);
@@ -151,7 +146,7 @@ export default function KeluargaScreen() {
       );
 
       if (filterMode === 'uninvited') {
-        const isAlreadyInFamily = familyMembers.some(m => 
+        const isAlreadyInFamily = familyMembers.some(m =>
           m.name.toLowerCase() === displayName.toLowerCase()
         );
         return matchesSearch && !isAlreadyInFamily;
@@ -162,9 +157,9 @@ export default function KeluargaScreen() {
   }, [deviceContacts, searchQuery, filterMode, familyMembers, getCleanName, sanitizeString]);
 
   const toggleSelectContact = (contactId: string) => {
-    setSelectedContactIds(prev => 
-      prev.includes(contactId) 
-        ? prev.filter(id => id !== contactId) 
+    setSelectedContactIds(prev =>
+      prev.includes(contactId)
+        ? prev.filter(id => id !== contactId)
         : [...prev, contactId]
     );
   };
@@ -172,7 +167,7 @@ export default function KeluargaScreen() {
   const toggleSelectAllFiltered = () => {
     const pickableFiltered = filteredContacts.filter(c => {
       const displayName = getCleanName(c);
-      const isAlreadyInFamily = familyMembers.some(m => 
+      const isAlreadyInFamily = familyMembers.some(m =>
         m.name.toLowerCase() === displayName.toLowerCase()
       );
       return !isAlreadyInFamily;
@@ -214,8 +209,8 @@ export default function KeluargaScreen() {
     setSearchQuery('');
 
     const firstCleanName = getCleanName(contactsToAdd[0]);
-    const namesText = contactsToAdd.length === 1 
-      ? firstCleanName 
+    const namesText = contactsToAdd.length === 1
+      ? firstCleanName
       : `${contactsToAdd.length} kontak terpilih`;
 
     setTimeout(() => {
@@ -247,7 +242,7 @@ export default function KeluargaScreen() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
       <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
-        
+
         {/* HEADER */}
         <Animated.View entering={FadeInDown.delay(100).springify()}>
           <TouchableOpacity activeOpacity={0.9} className="rounded-[32px] overflow-hidden mb-6 shadow-sm" style={{ elevation: 2, shadowColor: '#3E2E22', shadowOpacity: 0.2, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12 }}>
@@ -272,10 +267,10 @@ export default function KeluargaScreen() {
               </View>
 
               <View className="flex-row gap-2 mt-2">
-                <TouchableOpacity 
-                  onPress={handleInvite} 
+                <TouchableOpacity
+                  onPress={handleInvite}
                   disabled={isLoadingContacts}
-                  activeOpacity={0.8} 
+                  activeOpacity={0.8}
                   className="flex-1 bg-mustard rounded-xl py-3 flex-row justify-center items-center gap-2"
                 >
                   {isLoadingContacts ? (
@@ -287,8 +282,8 @@ export default function KeluargaScreen() {
                     </>
                   )}
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  activeOpacity={0.8} 
+                <TouchableOpacity
+                  activeOpacity={0.8}
                   onPress={() => {
                     setTempSeed(familySecret);
                     setShowSeedModal(true);
@@ -316,7 +311,7 @@ export default function KeluargaScreen() {
             const isSafe = member.status === 'Aman';
             const isWaiting = member.status === 'Menunggu';
             const uniqueKey = `${member.id || 'mem'}_${i}`;
-            
+
             return (
               <Animated.View entering={FadeInDown.delay(300 + i * 100).springify()} key={uniqueKey} layout={Layout.springify()} className="bg-surface rounded-2xl overflow-hidden shadow-sm" style={{ elevation: 1 }}>
                 <TouchableOpacity activeOpacity={0.7} onPress={() => toggleExpand(member.id)} className="p-4 flex-row items-center justify-between">
@@ -334,7 +329,7 @@ export default function KeluargaScreen() {
                       <AppText size="xs" className="font-body text-text-muted mt-0.5">{member.role}</AppText>
                     </View>
                   </View>
-                  
+
                   <View className="flex-row items-center gap-2">
                     {isSafe ? <ShieldCheck color="#74822F" size={16} /> : isWaiting ? null : <AlertCircle color="#C1592E" size={16} />}
                     {isExpanded ? <ChevronUp color="#3E2E22" size={20} opacity={0.5} /> : <ChevronDown color="#3E2E22" size={20} opacity={0.5} />}
@@ -344,7 +339,7 @@ export default function KeluargaScreen() {
                 {isExpanded && (
                   <Animated.View entering={FadeIn} exiting={FadeOut} className="px-4 pb-4 pt-1 border-t border-espresso/5">
                     <AppText size="xs" className="font-body text-text-muted mb-3">Status Codeword: {member.verified ? <AppText size="xs" className="text-olive font-bold">Terverifikasi</AppText> : <AppText size="xs" className="text-terracotta font-bold">Belum</AppText>}</AppText>
-                    
+
                     {!isMe && (
                       <View className="flex-row gap-2">
                         <TouchableOpacity className="flex-1 bg-terracotta/10 border border-terracotta/30 py-2 rounded-xl items-center flex-row justify-center gap-2">
@@ -376,7 +371,7 @@ export default function KeluargaScreen() {
               <AppText size="xs" className="font-body text-text-muted mb-4">
                 Masukkan kalimat unik rahasia keluargamu. Pastikan setiap HP keluarga memasukkan seed yang persis sama agar Codeword TOTP selalu sinkron.
               </AppText>
-              
+
               <TextInput
                 className="bg-white border border-espresso/20 rounded-xl p-4 font-body text-espresso mb-4"
                 value={tempSeed}
@@ -386,7 +381,7 @@ export default function KeluargaScreen() {
                 autoCapitalize="none"
               />
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={() => {
                   updateFamilySecret(tempSeed);
@@ -405,7 +400,7 @@ export default function KeluargaScreen() {
       <Modal visible={showContactsModal} transparent animationType="slide">
         <View className="flex-1 justify-end bg-black/60">
           <View className="bg-cream rounded-t-[32px] h-[85%] flex-col">
-            
+
             {/* Modal Header */}
             <View className="p-5 pb-3 border-b border-espresso/10">
               <View className="flex-row justify-between items-center mb-3">
@@ -461,8 +456,8 @@ export default function KeluargaScreen() {
                 </View>
 
                 {filteredContacts.length > 0 && (
-                  <TouchableOpacity 
-                    onPress={toggleSelectAllFiltered} 
+                  <TouchableOpacity
+                    onPress={toggleSelectAllFiltered}
                     className="flex-row items-center gap-1.5 px-2 py-1 bg-mustard/15 rounded-lg border border-mustard/30"
                   >
                     <CheckSquare size={13} color="#E8A33D" />
@@ -471,7 +466,7 @@ export default function KeluargaScreen() {
                 )}
               </View>
             </View>
-            
+
             {/* CONTACTS LIST (VIRTUALIZED FOR HIGH PERFORMANCE) */}
             <FlatList
               className="flex-1 px-5 pt-3"
@@ -495,22 +490,22 @@ export default function KeluargaScreen() {
               renderItem={({ item: contact }) => {
                 const displayName = getCleanName(contact);
                 const contactId = contact.id || displayName;
-                const isAlreadyInFamily = familyMembers.some(m => 
+                const isAlreadyInFamily = familyMembers.some(m =>
                   m.name.toLowerCase() === displayName.toLowerCase()
                 );
                 const isSelected = selectedContactIds.includes(contactId);
 
                 return (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     key={contactId}
                     disabled={isAlreadyInFamily}
                     activeOpacity={0.7}
                     onPress={() => toggleSelectContact(contactId)}
                     className={`flex-row items-center justify-between p-4 rounded-2xl mb-3 border ${
-                      isSelected 
-                        ? 'bg-mustard/10 border-mustard shadow-sm' 
-                        : isAlreadyInFamily 
-                        ? 'bg-espresso/5 border-espresso/10 opacity-60' 
+                      isSelected
+                        ? 'bg-mustard/10 border-mustard shadow-sm'
+                        : isAlreadyInFamily
+                        ? 'bg-espresso/5 border-espresso/10 opacity-60'
                         : 'bg-surface border-espresso/10 shadow-sm'
                     }`}
                   >
@@ -531,7 +526,7 @@ export default function KeluargaScreen() {
                           {displayName.substring(0, 2).toUpperCase()}
                         </AppText>
                       </View>
-                      
+
                       <View className="flex-1">
                         <AppText size="sm" className="font-heading text-espresso" numberOfLines={1}>
                           {displayName}
@@ -566,8 +561,8 @@ export default function KeluargaScreen() {
 
             {/* BOTTOM BATCH PICK BAR */}
             {selectedContactIds.length > 0 && (
-              <Animated.View 
-                entering={FadeInDown.duration(200)} 
+              <Animated.View
+                entering={FadeInDown.duration(200)}
                 exiting={FadeOut.duration(150)}
                 className="p-4 bg-surface border-t border-espresso/10 shadow-lg flex-row items-center justify-between"
               >

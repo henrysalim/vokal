@@ -78,7 +78,7 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-cream justify-between">
-      
+
       {/* TOP BAR */}
       <View className="flex-row justify-between items-center px-6 pt-2 pb-4">
         <View className="flex-row items-center gap-2">

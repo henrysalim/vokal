@@ -1,7 +1,4 @@
-/**
- * quizData.ts — 15 soal quiz nyata tentang keamanan siber & deteksi scam.
- * 3 kategori: Deteksi AI Suara, Kenali Modus Penipuan, Tindakan Tepat
- */
+
 
 export type QuizOption = {
   id: string;
@@ -20,7 +17,7 @@ export type QuizQuestion = {
 };
 
 export const QUIZ_QUESTIONS: QuizQuestion[] = [
-  // ─── KATEGORI 1: Deteksi AI Suara ───────────────────────────────
+
   {
     id: 'q1',
     category: 'deteksi_ai',
@@ -97,7 +94,6 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     xpReward: 25,
   },
 
-  // ─── KATEGORI 2: Kenali Modus Penipuan ──────────────────────────
   {
     id: 'q6',
     category: 'kenali_modus',
@@ -174,7 +170,6 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
     xpReward: 20,
   },
 
-  // ─── KATEGORI 3: Tindakan Tepat ─────────────────────────────────
   {
     id: 'q11',
     category: 'tindakan_tepat',

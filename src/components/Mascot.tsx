@@ -13,7 +13,7 @@ export default function VokalMascot({ size = 120 }: { size?: number }) {
         withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) })
       ),
       -1, // Infinite repeat
-      true // Reverse
+      true
     );
   }, []);
 
@@ -40,17 +40,17 @@ export default function VokalMascot({ size = 120 }: { size?: number }) {
           </G>
 
           {/* Shield body */}
-          <Path 
+          <Path
             d="M100 18 L148 38 L148 88 C148 118 126 140 100 152 C74 140 52 118 52 88 L52 38 Z"
-            fill="#E8A33D" 
+            fill="#E8A33D"
           />
           {/* Shield shadow/highlight */}
-          <Path 
+          <Path
             d="M100 18 L100 152 C74 140 52 118 52 88 L52 38 Z"
-            fill="rgba(62,46,34,0.08)" 
+            fill="rgba(62,46,34,0.08)"
           />
           {/* Shield outline */}
-          <Path 
+          <Path
             d="M100 18 L148 38 L148 88 C148 118 126 140 100 152 C74 140 52 118 52 88 L52 38 Z"
             stroke="#3E2E22" strokeWidth="5" fill="none" strokeLinejoin="round"
           />

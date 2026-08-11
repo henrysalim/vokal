@@ -75,7 +75,7 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
       <ScrollView className="flex-1 px-5 pt-2" contentContainerStyle={{ paddingBottom: 50 }} showsVerticalScrollIndicator={false}>
-        
+
         {/* BACK BUTTON */}
         <TouchableOpacity
           onPress={() => navigation?.goBack()}
@@ -96,7 +96,7 @@ export default function RegisterScreen() {
 
         {/* FORM CARD */}
         <Animated.View entering={FadeInDown.delay(200).springify()} className="bg-surface rounded-[28px] p-6 shadow-sm border border-espresso/5">
-          
+
           {/* GOOGLE SIGN-UP BUTTON */}
           <TouchableOpacity
             activeOpacity={0.8}

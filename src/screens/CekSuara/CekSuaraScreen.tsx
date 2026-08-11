@@ -17,7 +17,6 @@ export default function CekSuaraScreen() {
   const [showPanicMode, setShowPanicMode] = useState(false);
   const [countdown, setCountdown] = useState(60);
 
-  // Analysis States
   const [dspResult, setDspResult] = useState<DspAnalysisResult | null>(null);
   const [cloudScore, setCloudScore] = useState<number | null>(null);
   const [isOfflineMode, setIsOfflineMode] = useState(false);
@@ -27,7 +26,6 @@ export default function CekSuaraScreen() {
   const pulse = useSharedValue(1);
   const breathPulse = useSharedValue(1);
 
-  // Mic Pulsing Animation
   useEffect(() => {
     pulse.value = withRepeat(
       withSequence(
@@ -39,13 +37,12 @@ export default function CekSuaraScreen() {
     );
   }, []);
 
-  // Breathing Animation for Panic Mode
   useEffect(() => {
     if (showPanicMode) {
       breathPulse.value = withRepeat(
         withSequence(
           withTiming(1.5, { duration: 4000, easing: Easing.inOut(Easing.sin) }), // Inhale
-          withTiming(1, { duration: 4000, easing: Easing.inOut(Easing.sin) })    // Exhale
+          withTiming(1, { duration: 4000, easing: Easing.inOut(Easing.sin) })
         ),
         -1,
         true
@@ -90,24 +87,17 @@ export default function CekSuaraScreen() {
             meteringData.push(status.metering);
           }
         },
-        100 // Update interval 100ms
+        100
       );
 
-      // Record for 5 seconds for optimal DSP sampling
       setTimeout(async () => {
         await recording.stopAndUnloadAsync();
         const recordingUri = recording.getURI();
         setScanState('analyzing');
 
-        // ==========================================
-        // PHASE 1: INSTANT LOCAL DSP ANALYZER (Pure JS, 0ms Latency)
-        // ==========================================
         const localDsp = analyzeLocalDSP(meteringData);
         setDspResult(localDsp);
 
-        // ==========================================
-        // PHASE 2: CLOUD AI ESCALATION & OFFLINE FALLBACK
-        // ==========================================
         setIsCloudScanning(true);
         let cloudProbability: number | null = null;
 
@@ -154,12 +144,9 @@ export default function CekSuaraScreen() {
           setIsCloudScanning(false);
         }
 
-        // ==========================================
-        // PHASE 3: COMBINED HYBRID RISK SCORE
-        // ==========================================
         let finalScore = localDsp.urgencyScore;
         if (cloudProbability !== null) {
-          // Weighted Hybrid: 40% Local DSP Urgency + 60% Cloud Spectral AI
+
           finalScore = (localDsp.urgencyScore * 0.4) + (cloudProbability * 0.6);
         }
 
@@ -250,7 +237,7 @@ export default function CekSuaraScreen() {
         {/* RESULTS SECTION */}
         {scanState === 'result' && (
           <Animated.View entering={FadeInDown.springify()}>
-            
+
             {/* OVERALL RISK BANNER */}
             {finalCombinedScore >= 60 ? (
               <View className="w-full bg-warning/10 rounded-[24px] p-5 shadow-sm border-2 border-warning/30 mb-5">
@@ -298,9 +285,9 @@ export default function CekSuaraScreen() {
 
             {/* DUAL LAYER BREAKDOWN CARDS */}
             <AppText size="sm" className="text-espresso font-heading mb-3">Rincian Analisis Hybrid Layer:</AppText>
-            
+
             <View className="gap-3 mb-5">
-              
+
               {/* LAYER 1: ON-DEVICE DSP CARD */}
               <View className="bg-surface rounded-2xl p-4 border border-espresso/10 shadow-sm flex-row items-center justify-between">
                 <View className="flex-row items-center gap-3 flex-1 pr-2">
@@ -344,9 +331,9 @@ export default function CekSuaraScreen() {
                       )}
                     </View>
                     <AppText size="xs" className="font-body text-text-muted mt-0.5">
-                      {isOfflineMode 
-                        ? 'Sinyal terbatas. Memakai proteksi lokal.' 
-                        : cloudScore !== null 
+                      {isOfflineMode
+                        ? 'Sinyal terbatas. Memakai proteksi lokal.'
+                        : cloudScore !== null
                         ? `Probabilitas AI: ${cloudScore}%`
                         : 'Memproses spektral vokal...'}
                     </AppText>
@@ -365,8 +352,8 @@ export default function CekSuaraScreen() {
 
             {/* PANIC MODE SHORTCUT */}
             {finalCombinedScore >= 60 && (
-              <TouchableOpacity 
-                activeOpacity={0.9} 
+              <TouchableOpacity
+                activeOpacity={0.9}
                 onPress={() => setShowPanicMode(true)}
                 className="bg-espresso rounded-2xl py-4 px-5 flex-row items-center justify-between mb-4 shadow-sm"
               >
@@ -380,7 +367,7 @@ export default function CekSuaraScreen() {
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity 
+            <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setScanState('idle')}
               className="mt-2 py-3 items-center"

@@ -11,7 +11,7 @@ import { AppText } from '../../components/ui/AppText';
 export default function LoginScreen() {
   const { signInWithGoogle, signInWithEmail, isLoading } = useAuth();
   const navigation = useNavigation<any>();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -23,12 +23,12 @@ export default function LoginScreen() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
       <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        
+
         {/* HEADER HERO CARD */}
         <Animated.View entering={FadeInDown.delay(100).springify()} className="bg-espresso rounded-[32px] p-6 mb-6 overflow-hidden relative shadow-md">
           <View className="absolute -top-8 -right-8 w-32 h-32 rounded-full opacity-10 bg-mustard" />
           <View className="absolute -bottom-8 -left-8 w-40 h-40 rounded-full opacity-10 bg-olive" />
-          
+
           <View className="items-center my-2">
             <VokalMascot size={110} />
             <AppText size="3xl" className="text-white font-heading text-center mt-3">Masuk ke VOKAL</AppText>
@@ -38,7 +38,7 @@ export default function LoginScreen() {
 
         {/* FORM CARD */}
         <Animated.View entering={FadeInDown.delay(200).springify()} className="bg-surface rounded-[28px] p-6 shadow-sm border border-espresso/5">
-          
+
           {/* GOOGLE SIGN-IN BUTTON */}
           <TouchableOpacity
             activeOpacity={0.8}

@@ -1,0 +1,248 @@
+
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import * as AuthSession from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
+import Constants from 'expo-constants';
+import { Alert } from 'react-native';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+WebBrowser.maybeCompleteAuthSession();
+
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '';
+const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
+const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+const isExpoGo =
+  Constants.executionEnvironment === 'storeClient' ||
+  (Constants as any).appOwnership === 'expo';
+
+const EXPO_PROXY_REDIRECT_URI = 'https://auth.expo.io/@henrysalim/vokal';
+
+const discovery = {
+  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+  tokenEndpoint: 'https://oauth2.googleapis.com/token',
+};
+
+type GoogleAuthContextValue = {
+
+  isGoogleConnected: boolean;
+
+  googleAccessToken: string | null;
+
+  googleUserEmail: string | null;
+
+  isConnecting: boolean;
+
+  connectGoogle: () => Promise<string | null>;
+
+  disconnectGoogle: () => Promise<void>;
+
+  ensureFreshToken: () => Promise<string | null>;
+};
+
+const GoogleAuthContext = createContext<GoogleAuthContextValue | null>(null);
+
+export function GoogleAuthProvider({ children }: { children: React.ReactNode }) {
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
+  const [googleUserEmail, setGoogleUserEmail] = useState<string | null>(null);
+  const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  useEffect(() => {
+    loadStoredToken();
+  }, []);
+
+  const loadStoredToken = async () => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('gmail_access_token, gmail_token_obtained_at, gmail_connected_until, email')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!profile?.gmail_access_token || !profile?.gmail_connected_until) return;
+
+      const connectedUntil = new Date(profile.gmail_connected_until).getTime();
+      if (Date.now() > connectedUntil) {
+        await clearStoredToken(session.user.id);
+        return;
+      }
+
+      setGoogleAccessToken(profile.gmail_access_token);
+      setGoogleUserEmail(profile.email || session.user.email || null);
+      setIsGoogleConnected(true);
+    } catch {}
+  };
+
+  const handleTokenReceived = async (token: string): Promise<string | null> => {
+    try {
+      const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const userInfo = await userInfoRes.json();
+      const email: string | null = userInfo.email || null;
+
+      await persistToken(token, email);
+
+      setGoogleAccessToken(token);
+      setGoogleUserEmail(email);
+      setIsGoogleConnected(true);
+      return token;
+    } catch {
+      setGoogleAccessToken(token);
+      setIsGoogleConnected(true);
+      return token;
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const persistToken = async (token: string, email: string | null) => {
+    if (!isSupabaseConfigured()) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    const now = new Date();
+    const connectedUntil = new Date(now.getTime() + ONE_MONTH_MS);
+
+    await supabase
+      .from('profiles')
+      .update({
+        gmail_access_token: token,
+        gmail_token_obtained_at: now.toISOString(),
+        gmail_connected_until: connectedUntil.toISOString(),
+      })
+      .eq('id', session.user.id);
+  };
+
+  const clearStoredToken = async (userId?: string) => {
+    if (!isSupabaseConfigured()) return;
+    let uid = userId;
+    if (!uid) {
+      const { data: { session } } = await supabase.auth.getSession();
+      uid = session?.user?.id;
+    }
+    if (!uid) return;
+    await supabase
+      .from('profiles')
+      .update({ gmail_access_token: null, gmail_token_obtained_at: null, gmail_connected_until: null })
+      .eq('id', uid);
+  };
+
+  const connectGoogle = useCallback(async (): Promise<string | null> => {
+    setIsConnecting(true);
+    try {
+      if (!GOOGLE_CLIENT_ID) {
+        Alert.alert('Client ID Belum Dikonfigurasi', 'Tambahkan EXPO_PUBLIC_GOOGLE_CLIENT_ID ke file .env kamu.', [{ text: 'OK' }]);
+        return null;
+      }
+
+      const redirectUrl = isExpoGo ? EXPO_PROXY_REDIRECT_URI : AuthSession.makeRedirectUri({ scheme: 'vokal' });
+
+      const request = new AuthSession.AuthRequest({
+        clientId: GOOGLE_CLIENT_ID,
+        scopes: ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/gmail.readonly'],
+        redirectUri: redirectUrl,
+        responseType: AuthSession.ResponseType.Code,
+        usePKCE: true,
+      });
+
+      const result = await request.promptAsync(discovery);
+
+      if (result.type === 'success' && result.params?.code) {
+        const tokenResult = await AuthSession.exchangeCodeAsync(
+          {
+            clientId: GOOGLE_CLIENT_ID,
+            code: result.params.code,
+            redirectUri: redirectUrl,
+            extraParams: {
+              code_verifier: request.codeVerifier || '',
+            },
+          },
+          discovery
+        );
+
+        if (tokenResult.accessToken) {
+          return await handleTokenReceived(tokenResult.accessToken);
+        } else {
+          Alert.alert('Gagal Otorisasi Google', 'Token akses Google tidak dapat ditemukan.');
+        }
+      } else if (result.type === 'error') {
+        const errorMsg = result.error?.message || 'Akses ditolak oleh Google.';
+        Alert.alert(
+          'Gagal Otorisasi Google (403/Denied)',
+          `${errorMsg}\n\nPastikan:\n1. Email Anda sudah didaftarkan di "Test users" (OAuth Consent Screen).\n2. "Gmail API" sudah di-Enable di GCP Console.`
+        );
+      }
+    } catch (err: any) {
+      Alert.alert('Error Otorisasi Gmail', err.message || 'Terjadi kesalahan sistem.');
+    } finally {
+      setIsConnecting(false);
+    }
+    return null;
+  }, []);
+
+  const disconnectGoogle = useCallback(async () => {
+    setGoogleAccessToken(null);
+    setGoogleUserEmail(null);
+    setIsGoogleConnected(false);
+    await clearStoredToken();
+  }, []);
+
+  const ensureFreshToken = useCallback(async (): Promise<string | null> => {
+    if (googleAccessToken && isSupabaseConfigured()) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('gmail_token_obtained_at, gmail_connected_until')
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile?.gmail_token_obtained_at && profile?.gmail_connected_until) {
+            const obtainedAt = new Date(profile.gmail_token_obtained_at).getTime();
+            const connectedUntil = new Date(profile.gmail_connected_until).getTime();
+
+            if (Date.now() > connectedUntil) {
+              await clearStoredToken(session.user.id);
+              setGoogleAccessToken(null);
+              setIsGoogleConnected(false);
+              return null;
+            }
+
+            if (Date.now() - obtainedAt < ONE_HOUR_MS) {
+              return googleAccessToken;
+            }
+          }
+        }
+      } catch {
+        return googleAccessToken;
+      }
+    }
+
+    if (isGoogleConnected) {
+      return connectGoogle();
+    }
+    return null;
+  }, [googleAccessToken, isGoogleConnected, connectGoogle]);
+
+  return (
+    <GoogleAuthContext.Provider
+      value={{ isGoogleConnected, googleAccessToken, googleUserEmail, isConnecting, connectGoogle, disconnectGoogle, ensureFreshToken }}
+    >
+      {children}
+    </GoogleAuthContext.Provider>
+  );
+}
+
+export function useGoogleAuth(): GoogleAuthContextValue {
+  const ctx = useContext(GoogleAuthContext);
+  if (!ctx) throw new Error('useGoogleAuth must be used inside <GoogleAuthProvider>');
+  return ctx;
+}
