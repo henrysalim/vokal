@@ -31,8 +31,9 @@ import RadarModus from "../../components/ui/RadarModus";
 import { useLansia } from "../../context/LansiaContext";
 import { useUser } from "../../context/UserContext";
 import { EMERGENCY_CONTACTS } from "../../data/emergencyContacts";
-import { MOCK_CODEWORD, QUICK_ACTIONS } from "../../data/mock";
+import { QUICK_ACTIONS } from "../../data/mock";
 import { generateRandomSecret } from "../../utils/totp";
+import { supabase, isSupabaseConfigured } from "../../lib/supabase";
 
 type HomeScreenProps = {
   navigation?: any;
@@ -50,6 +51,27 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const xpNextLevel = 2000;
   const xpPct = Math.min(100, Math.round((xp / xpNextLevel) * 100));
   const xpWidth = useSharedValue(0);
+  const [familyMemberCount, setFamilyMemberCount] = React.useState(1);
+
+  // Load jumlah anggota keluarga dari Supabase
+  React.useEffect(() => {
+    if (!isSupabaseConfigured() || !user?.id) return;
+    supabase
+      .from('profiles')
+      .select('family_id')
+      .eq('id', user.id)
+      .single()
+      .then(({ data: myProfile }) => {
+        if (!myProfile?.family_id) return;
+        supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .eq('family_id', myProfile.family_id)
+          .then(({ count }) => {
+            if (count !== null) setFamilyMemberCount(count);
+          });
+      });
+  }, [user?.id]);
 
   const handleShareFamily = () => {
     Share.share({
@@ -256,9 +278,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 {[0, 1, 2, 3, 4].map((i) => (
                   <View
                     key={i}
-                    className={`w-8 h-8 rounded-full items-center justify-center border-2 ${i < MOCK_CODEWORD.verifiedCount ? "bg-olive border-olive" : "bg-espresso/10 border-cream/50"} -ml-2 first:ml-0`}
+                    className={`w-8 h-8 rounded-full items-center justify-center border-2 ${i < familyMemberCount ? "bg-olive border-olive" : "bg-espresso/10 border-cream/50"} -ml-2 first:ml-0`}
                   >
-                    {i < MOCK_CODEWORD.verifiedCount ? (
+                    {i < familyMemberCount ? (
                       <AppText size="xs" className="text-white font-display">
                         V
                       </AppText>
@@ -269,7 +291,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 ))}
               </View>
               <AppText size="xs" className="text-espresso/80 font-body ml-3">
-                {MOCK_CODEWORD.verifiedCount}/{MOCK_CODEWORD.totalCount}{" "}
+                {familyMemberCount}/5{" "}
                 terverifikasi
               </AppText>
             </View>
@@ -279,14 +301,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 <View
                   className="h-full bg-olive rounded-full"
                   style={{
-                    width: `${(MOCK_CODEWORD.verifiedCount / MOCK_CODEWORD.totalCount) * 100}%`,
+                    width: `${Math.min(100, (familyMemberCount / 5) * 100)}%`,
                   }}
                 />
               </View>
               <View className="flex-row items-center gap-1">
                 <ShieldCheck color="#74822F" size={16} />
                 <AppText size="xs" className="text-olive font-display">
-                  {MOCK_CODEWORD.verifiedCount}/{MOCK_CODEWORD.totalCount}
+                  {familyMemberCount}/5
                 </AppText>
               </View>
             </View>

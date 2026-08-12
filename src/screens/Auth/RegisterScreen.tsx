@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, ChevronLeft } from 'lucide-react-native';
+import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, ChevronLeft, Users, ChevronDown } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../context/auth';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
@@ -18,6 +18,8 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [familyCode, setFamilyCode] = useState('');
+  const [showFamilyField, setShowFamilyField] = useState(false);
 
   const getPasswordStrength = () => {
     if (!password) return 0;
@@ -69,7 +71,7 @@ export default function RegisterScreen() {
       });
       return;
     }
-    await signUpWithEmail(name, email, password);
+    await signUpWithEmail(name, email, password, familyCode || undefined);
   };
 
   return (
@@ -202,6 +204,37 @@ export default function RegisterScreen() {
               />
             </View>
           </View>
+
+          {/* FAMILY CODE — OPTIONAL */}
+          <TouchableOpacity
+            onPress={() => setShowFamilyField(!showFamilyField)}
+            className="flex-row items-center gap-2 mb-3"
+            activeOpacity={0.7}
+          >
+            <Users color="#74822F" size={16} />
+            <AppText size="xs" className="font-heading text-olive flex-1">Bergabung ke Keluarga (Opsional)</AppText>
+            <ChevronDown color="#74822F" size={16} style={{ transform: [{ rotate: showFamilyField ? '180deg' : '0deg' }] }} />
+          </TouchableOpacity>
+
+          {showFamilyField && (
+            <View className="bg-olive/8 border border-olive/20 rounded-2xl p-3.5 mb-4">
+              <AppText size="xs" className="font-body text-text-muted leading-relaxed mb-3">
+                Masukkan kode keluarga jika ada anggota keluarga yang sudah punya akun VOKAL. Kosongkan jika mendaftar sendiri.
+              </AppText>
+              <View className="flex-row items-center bg-cream border border-olive/20 rounded-2xl px-4 py-3.5">
+                <Users color="#74822F" size={18} />
+                <TextInput
+                  value={familyCode}
+                  onChangeText={text => setFamilyCode(text.toUpperCase())}
+                  placeholder="Contoh: VOKAL2026"
+                  placeholderTextColor="#A39686"
+                  autoCapitalize="characters"
+                  maxLength={16}
+                  className="flex-1 ml-3 font-body text-sm text-espresso p-0 tracking-widest"
+                />
+              </View>
+            </View>
+          )}
 
           {/* PRIVACY CARD */}
           <View className="bg-olive/10 border border-olive/20 rounded-2xl p-3.5 flex-row items-start gap-2.5 mb-6">
