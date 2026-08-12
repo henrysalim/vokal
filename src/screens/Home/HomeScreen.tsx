@@ -392,6 +392,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
           <TouchableOpacity
             activeOpacity={0.8}
+            onPress={() => navigation?.navigate('Akademi')}
             className="w-full bg-mustard py-3 rounded-xl items-center flex-row justify-center gap-2 border-b-4 border-[#d49232]"
           >
             <AppText size="sm" className="text-espresso font-heading">
@@ -404,6 +405,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         {/* SKOR EKSPOSUR SUARA */}
         <TouchableOpacity
           activeOpacity={0.9}
+          onPress={() => navigation?.navigate('Analisis', { screen: 'CekSuara' })}
           className="mt-6 bg-olive/10 border border-olive/20 rounded-[24px] p-5 mb-6 flex-row items-center gap-4"
         >
           <View className="w-16 h-16 rounded-full bg-olive/20 items-center justify-center">

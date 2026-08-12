@@ -10,7 +10,7 @@ import {
   User,
 } from "lucide-react-native";
 import React, { useState } from "react";
-import { Image, ScrollView, Switch, TouchableOpacity, View } from "react-native";
+import { Alert, Image, ScrollView, Switch, TouchableOpacity, View } from "react-native";
 import Animated, {
   Easing,
   FadeInDown,
@@ -152,10 +152,15 @@ export default function ProfilScreen() {
                 title: "Edit Profil",
                 onPress: () => navigation.navigate('EditProfil'),
               },
-              { icon: <Bell color="#3E2E22" size={20} />, title: "Notifikasi" },
+              {
+                icon: <Bell color="#3E2E22" size={20} />,
+                title: "Notifikasi",
+                onPress: () => Alert.alert('Segera Hadir', 'Fitur notifikasi akan tersedia di pembaruan berikutnya.'),
+              },
               {
                 icon: <Settings color="#3E2E22" size={20} />,
                 title: "Pengaturan Suara",
+                onPress: () => Alert.alert('Segera Hadir', 'Pengaturan suara akan tersedia di pembaruan berikutnya.'),
               },
             ].map((item, index) => (
               <TouchableOpacity
@@ -180,7 +185,10 @@ export default function ProfilScreen() {
 
         {/* ABOUT & LOGOUT */}
         <View className="gap-2 mb-6">
-          <TouchableOpacity className="bg-[#FFFFFF] rounded-2xl p-4 flex-row items-center gap-3 border border-espresso/5">
+          <TouchableOpacity
+            onPress={() => Alert.alert('VOKAL', 'Verifikasi Otomatis Kloning Audio Lokal\nVersi 1.0.0\n\nDibuat untuk melindungi keluarga Indonesia dari ancaman penipuan digital berbasis AI.')}
+            activeOpacity={0.8}
+            className="bg-[#FFFFFF] rounded-2xl p-4 flex-row items-center gap-3 border border-espresso/5">
             <CircleHelp color="#74822F" size={20} />
             <View className="flex-1">
               <AppText size="sm" className="font-heading text-espresso mb-0.5">
