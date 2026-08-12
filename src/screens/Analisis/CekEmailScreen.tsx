@@ -1,582 +1,536 @@
-import { useGoogleAuth } from "@/src/context/GoogleAuthContext";
-import * as WebBrowser from "expo-web-browser";
+import React, { useState } from 'react';
 import {
-  ChevronRight,
-  FileText,
-  Mail,
-  ShieldCheck,
-  X,
-} from "lucide-react-native";
-import React, { useState } from "react";
+  View, ScrollView, TouchableOpacity, TextInput,
+  ActivityIndicator, Alert, Keyboard, Modal
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  ActivityIndicator,
-  Alert,
-  Keyboard,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { AppText } from "../../components/ui/AppText";
-import {
-  analyzeForPhishing,
-  PhishingAnalysisResult,
-  PhishingFlag,
-} from "../../utils/phishingEngine";
+  Mail, ShieldCheck, ChevronRight, X, FileText,
+  CheckSquare, Square, AlertTriangle, RotateCcw, Sparkles
+} from 'lucide-react-native';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import { useGoogleAuth } from '../../context/GoogleAuthContext';
+import { AppText } from '../../components/ui/AppText';
+import { analyzeWithGemini, GeminiAnalysisResult, GeminiAnalysisFlag } from '../../utils/geminiAnalyzer';
 
-WebBrowser.maybeCompleteAuthSession();
+const GMAIL_FETCH_LIMIT = 15;
 
-const GMAIL_FETCH_LIMIT = 10;
+// ─── Sub-Components ───────────────────────────────────────────────
 
-function FlagCard({ flag }: { flag: PhishingFlag }) {
-  const borderColor =
-    flag.level === "danger"
-      ? "border-terracotta/40"
-      : flag.level === "warning"
-        ? "border-mustard/40"
-        : "border-olive/40";
-  const bgColor =
-    flag.level === "danger"
-      ? "bg-terracotta/8"
-      : flag.level === "warning"
-        ? "bg-mustard/8"
-        : "bg-olive/8";
-  const dotColor =
-    flag.level === "danger"
-      ? "bg-terracotta"
-      : flag.level === "warning"
-        ? "bg-mustard"
-        : "bg-olive";
+function FlagCard({ flag }: { flag: GeminiAnalysisFlag }) {
+  const styles = {
+    danger: { border: 'border-terracotta/40', bg: 'bg-terracotta/8', dot: '#C1592E' },
+    warning: { border: 'border-mustard/40', bg: 'bg-mustard/8', dot: '#E8A33D' },
+    info: { border: 'border-olive/40', bg: 'bg-olive/8', dot: '#74822F' },
+  }[flag.level] ?? { border: 'border-espresso/20', bg: 'bg-espresso/5', dot: '#3E2E22' };
 
   return (
-    <View className={`${bgColor} border ${borderColor} rounded-2xl p-3.5 mb-2`}>
+    <Animated.View entering={FadeInDown.springify()} className={`${styles.bg} border ${styles.border} rounded-2xl p-3.5 mb-2`}>
       <View className="flex-row items-center gap-2 mb-1">
-        <View className={`w-2 h-2 rounded-full ${dotColor}`} />
-        <AppText size="sm" className="text-espresso font-heading flex-1">
-          {flag.label}
-        </AppText>
+        <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: styles.dot }} />
+        <AppText size="sm" className="text-espresso font-heading flex-1">{flag.label}</AppText>
       </View>
-      <AppText size="xs" className="text-espresso/70 font-body leading-relaxed">
-        {flag.description}
-      </AppText>
-    </View>
+      <AppText size="xs" className="text-espresso/70 font-body leading-relaxed">{flag.description}</AppText>
+    </Animated.View>
   );
 }
 
 function ScoreRing({ score, verdict }: { score: number; verdict: string }) {
-  const color = score >= 50 ? "#C1592E" : score >= 20 ? "#E8A33D" : "#74822F";
+  const color = score >= 50 ? '#C1592E' : score >= 20 ? '#E8A33D' : '#74822F';
+  const bgColor = score >= 50 ? 'bg-terracotta/10' : score >= 20 ? 'bg-mustard/10' : 'bg-olive/10';
+  const borderColor = score >= 50 ? 'border-terracotta/30' : score >= 20 ? 'border-mustard/30' : 'border-olive/30';
   return (
-    <View className="items-center py-5">
-      <View
-        className="w-28 h-28 rounded-full items-center justify-center border-8"
-        style={{ borderColor: color }}
-      >
-        <AppText size="3xl" className="font-display" style={{ color }}>
-          {score}
-        </AppText>
-        <AppText size="xs" className="text-text-muted font-body">
-          / 100
-        </AppText>
+    <View className={`items-center py-6 mx-4 rounded-[20px] ${bgColor} border ${borderColor} mb-4`}>
+      <View className="w-28 h-28 rounded-full items-center justify-center border-8 mb-3" style={{ borderColor }}>
+        <AppText size="3xl" className="font-display" style={{ color }}>{score}</AppText>
+        <AppText size="xs" className="text-text-muted font-body">/ 100</AppText>
       </View>
-      <View
-        className="mt-3 px-5 py-2 rounded-full"
-        style={{ backgroundColor: color }}
-      >
-        <AppText size="sm" className="text-white font-heading">
-          {verdict}
-        </AppText>
+      <View className="px-5 py-2 rounded-full" style={{ backgroundColor: color }}>
+        <AppText size="sm" className="text-white font-heading">{verdict}</AppText>
       </View>
     </View>
   );
 }
 
-export default function CekEmailScreen() {
-  const { connectGoogle, ensureFreshToken, googleAccessToken } =
-    useGoogleAuth();
-  const [mode, setMode] = useState<"choose" | "manual" | "gmail">("choose");
-  const [manualText, setManualText] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isConnectingGmail, setIsConnectingGmail] = useState(false);
-  const [result, setResult] = useState<PhishingAnalysisResult | null>(null);
-  const [gmailEmails, setGmailEmails] = useState<
-    Array<{ subject: string; snippet: string; from: string }>
-  >([]);
-  const [scannedCount, setScannedCount] = useState(0);
-  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
-  const [batchIndex, setBatchIndex] = useState<number>(1);
+// ─── Email Selection Item ──────────────────────────────────────────
 
+type EmailItem = {
+  id: string;
+  subject: string;
+  from: string;
+  snippet: string;
+  body: string;
+};
+
+function EmailListItem({
+  email, selected, onToggle,
+}: { email: EmailItem; selected: boolean; onToggle: () => void; }) {
+  return (
+    <TouchableOpacity
+      onPress={onToggle}
+      activeOpacity={0.75}
+      className={`rounded-2xl p-4 mb-2.5 border ${selected ? 'bg-terracotta/8 border-terracotta/30' : 'bg-surface border-espresso/8'}`}
+    >
+      <View className="flex-row items-start gap-3">
+        <View className="mt-0.5">
+          {selected
+            ? <CheckSquare color="#C1592E" size={20} fill="#C1592E" />
+            : <Square color="#9E8E7E" size={20} />
+          }
+        </View>
+        <View className="flex-1">
+          <AppText size="xs" className="text-text-muted font-body mb-0.5" numberOfLines={1}>
+            {email.from}
+          </AppText>
+          <AppText size="sm" className="text-espresso font-heading leading-tight" numberOfLines={2}>
+            {email.subject}
+          </AppText>
+          <AppText size="xs" className="text-text-muted font-body mt-1 leading-relaxed" numberOfLines={2}>
+            {email.snippet}
+          </AppText>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────
+
+export default function CekEmailScreen() {
+  const { connectGoogle, ensureFreshToken, googleAccessToken, isGoogleConnected } = useGoogleAuth();
+
+  type Mode = 'choose' | 'manual' | 'gmail_list' | 'result';
+  const [mode, setMode] = useState<Mode>('choose');
+  const [manualText, setManualText] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isLoadingGmail, setIsLoadingGmail] = useState(false);
+  const [result, setResult] = useState<GeminiAnalysisResult | null>(null);
+
+  // Gmail email list state
+  const [emails, setEmails] = useState<EmailItem[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [analyzedEmails, setAnalyzedEmails] = useState<{ subject: string; from: string; snippet: string }[]>([]);
+
+  // ── Gmail Fetch ──────────────────────────────────────────────────
   const handleConnectGmail = async () => {
     try {
-      setIsConnectingGmail(true);
-      setNextPageToken(null);
-      setBatchIndex(1);
+      setIsLoadingGmail(true);
       let token = googleAccessToken;
-      if (!token) {
-        token = await connectGoogle();
-      } else {
-        token = await ensureFreshToken();
-      }
-
-      if (token) {
-        await fetchAndAnalyzeGmail(token, null, 1);
-      }
+      if (!token) token = await connectGoogle();
+      else token = await ensureFreshToken();
+      if (!token) return;
+      await fetchGmailEmails(token);
     } catch (err: any) {
-      Alert.alert("Gagal Hubungkan Gmail", err.message || "Silakan coba lagi.");
+      Alert.alert('Gagal Hubungkan Gmail', err.message || 'Silakan coba lagi.');
     } finally {
-      setIsConnectingGmail(false);
+      setIsLoadingGmail(false);
     }
   };
 
-  const handleScanNextBatch = async () => {
-    if (!nextPageToken) {
-      Alert.alert(
-        "Akhir Inbox",
-        "Semua email terbaru di inbox telah dipindai.",
-      );
+  const fetchGmailEmails = async (accessToken: string) => {
+    const listRes = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${GMAIL_FETCH_LIMIT}&labelIds=INBOX`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const listJson = await listRes.json();
+
+    if (listJson.error) throw new Error(listJson.error.message || 'Gagal akses Gmail API.');
+
+    const messages: Array<{ id: string }> = listJson.messages || [];
+    if (messages.length === 0) {
+      Alert.alert('Inbox Kosong', 'Tidak ditemukan email di Inbox.');
       return;
     }
-    try {
-      setIsConnectingGmail(true);
-      let token = googleAccessToken;
-      if (!token) {
-        token = await connectGoogle();
-      } else {
-        token = await ensureFreshToken();
-      }
 
-      if (token) {
-        await fetchAndAnalyzeGmail(token, nextPageToken, batchIndex + 1);
-      }
-    } catch (err: any) {
-      Alert.alert(
-        "Gagal Pindai Batch Berikutnya",
-        err.message || "Silakan coba lagi.",
+    const fetched: EmailItem[] = [];
+    for (const msg of messages) {
+      const msgRes = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
       );
-    } finally {
-      setIsConnectingGmail(false);
+      const msgJson = await msgRes.json();
+      const headers: Array<{ name: string; value: string }> = msgJson.payload?.headers || [];
+      const subject = headers.find(h => h.name === 'Subject')?.value || '(Tanpa Judul)';
+      const from = headers.find(h => h.name === 'From')?.value || '(Pengirim Tidak Diketahui)';
+      const snippet = msgJson.snippet || '';
+      fetched.push({ id: msg.id, subject, from, snippet, body: `${subject} ${from} ${snippet}` });
+    }
+
+    setEmails(fetched);
+    setSelectedIds(new Set(fetched.map(e => e.id))); // Default semua terpilih
+    setMode('gmail_list');
+  };
+
+  // ── Gemini Analysis ──────────────────────────────────────────────
+  const runGeminiAnalysis = async (text: string, type: 'email' | 'message' = 'email') => {
+    try {
+      return await analyzeWithGemini({ type: 'text', content: text, analysisType: type });
+    } catch (err: any) {
+      throw new Error(err.message || 'Analisis Gemini gagal. Periksa koneksi internet.');
     }
   };
 
-  const fetchAndAnalyzeGmail = async (
-    accessToken: string,
-    pageToken?: string | null,
-    targetBatch: number = 1,
-  ) => {
+  const handleAnalyzeSelected = async () => {
+    if (selectedIds.size === 0) {
+      Alert.alert('Pilih Email', 'Pilih setidaknya 1 email untuk dianalisis.');
+      return;
+    }
+    const selected = emails.filter(e => selectedIds.has(e.id));
+    const combined = selected.map(e => `Dari: ${e.from}\nJudul: ${e.subject}\n${e.snippet}`).join('\n\n---\n\n');
+
+    setIsAnalyzing(true);
     try {
-      setIsConnectingGmail(true);
-      setMode("gmail");
-
-      const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${GMAIL_FETCH_LIMIT}&labelIds=INBOX${pageToken ? `&pageToken=${pageToken}` : ""}`;
-      const listRes = await fetch(url, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      const listJson = await listRes.json();
-
-      if (listJson.error) {
-        throw new Error(listJson.error.message || "Gagal mengakses API Gmail.");
-      }
-
-      const messages: Array<{ id: string }> = listJson.messages || [];
-      setNextPageToken(listJson.nextPageToken || null);
-      setBatchIndex(targetBatch);
-
-      if (messages.length === 0) {
-        Alert.alert(
-          "Inbox Kosong",
-          "Tidak ditemukan email lebih lanjut di Inbox.",
-        );
-        return;
-      }
-
-      const emailDetails: Array<{
-        subject: string;
-        snippet: string;
-        from: string;
-        body: string;
-      }> = [];
-      for (const msg of messages.slice(0, GMAIL_FETCH_LIMIT)) {
-        const msgRes = await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From`,
-          { headers: { Authorization: `Bearer ${accessToken}` } },
-        );
-        const msgJson = await msgRes.json();
-        const headers: Array<{ name: string; value: string }> =
-          msgJson.payload?.headers || [];
-        const subject =
-          headers.find((h) => h.name === "Subject")?.value || "(Tanpa Judul)";
-        const from =
-          headers.find((h) => h.name === "From")?.value ||
-          "(Pengirim Tidak Diketahui)";
-        const snippet = msgJson.snippet || "";
-        emailDetails.push({
-          subject,
-          from,
-          snippet,
-          body: `${subject} ${from} ${snippet}`,
-        });
-      }
-
-      setGmailEmails(
-        emailDetails.map((e) => ({
-          subject: e.subject,
-          snippet: e.snippet,
-          from: e.from,
-        })),
-      );
-      setScannedCount(emailDetails.length);
-
-      const combinedText = emailDetails.map((e) => e.body).join("\n\n");
-      const analysis = analyzeForPhishing(combinedText);
+      const analysis = await runGeminiAnalysis(combined, 'email');
+      setAnalyzedEmails(selected.map(e => ({ subject: e.subject, from: e.from, snippet: e.snippet })));
       setResult(analysis);
+      setMode('result');
     } catch (err: any) {
-      Alert.alert(
-        "Gagal Memuat Email",
-        err.message || "Pastikan koneksi internet stabil dan coba lagi.",
-      );
+      Alert.alert('Analisis Gagal', err.message || 'Coba lagi atau gunakan metode manual.');
     } finally {
-      setIsConnectingGmail(false);
+      setIsAnalyzing(false);
     }
   };
 
-  const handleAnalyzeManual = () => {
+  const handleAnalyzeManual = async () => {
     if (manualText.trim().length < 20) {
-      Alert.alert(
-        "Teks Terlalu Pendek",
-        "Tempel minimal 20 karakter teks email/pesan yang ingin dianalisis.",
-      );
+      Alert.alert('Teks Terlalu Pendek', 'Tempel minimal 20 karakter teks email/pesan.');
       return;
     }
     Keyboard.dismiss();
     setIsAnalyzing(true);
-    setTimeout(() => {
-      const analysis = analyzeForPhishing(manualText);
+    try {
+      const analysis = await runGeminiAnalysis(manualText, 'email');
       setResult(analysis);
+      setMode('result');
+    } catch (err: any) {
+      Alert.alert('Analisis Gagal', err.message || 'Coba lagi.');
+    } finally {
       setIsAnalyzing(false);
-    }, 800);
+    }
   };
 
   const handleReset = () => {
     setResult(null);
-    setManualText("");
-    setGmailEmails([]);
-    setNextPageToken(null);
-    setBatchIndex(1);
-    setMode("choose");
+    setManualText('');
+    setEmails([]);
+    setSelectedIds(new Set());
+    setAnalyzedEmails([]);
+    setMode('choose');
   };
 
-  if (isConnectingGmail) {
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds(prev =>
+      prev.size === emails.length ? new Set() : new Set(emails.map(e => e.id))
+    );
+  };
+
+  // ── Loading State ────────────────────────────────────────────────
+  if (isLoadingGmail) {
     return (
-      <SafeAreaView
-        edges={["top"]}
-        className="flex-1 bg-cream items-center justify-center px-8"
-      >
+      <SafeAreaView edges={['top']} className="flex-1 bg-cream items-center justify-center px-8">
         <ActivityIndicator size="large" color="#E8A33D" />
-        <AppText
-          size="base"
-          className="text-espresso font-heading mt-4 text-center"
-        >
-          {batchIndex > 1 ? `Memuat Email` : "Memuat Konten Gmail..."}
+        <AppText size="base" className="text-espresso font-heading mt-4 text-center">Memuat Email dari Gmail...</AppText>
+        <AppText size="xs" className="text-text-muted font-body text-center mt-2 leading-relaxed">
+          Mengambil {GMAIL_FETCH_LIMIT} email terbaru dari Inbox kamu.
         </AppText>
       </SafeAreaView>
     );
   }
 
-  if (result) {
+  if (isAnalyzing) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 bg-cream">
-        <ScrollView
-          className="flex-1 px-5 pt-4"
-          contentContainerStyle={{ paddingBottom: 120 }}
-        >
-          <View className="flex-row items-center justify-between mb-4">
-            <View>
-              <AppText size="xl" className="text-espresso font-heading">
-                Hasil Analisis
+      <SafeAreaView edges={['top']} className="flex-1 bg-cream items-center justify-center px-8">
+        <View className="w-20 h-20 rounded-full bg-terracotta/10 items-center justify-center mb-4 border-2 border-terracotta/20">
+          <Sparkles color="#C1592E" size={36} />
+        </View>
+        <AppText size="lg" className="text-espresso font-heading text-center mb-2">Gemini AI Sedang Menganalisis</AppText>
+        <AppText size="sm" className="text-text-muted font-body text-center leading-relaxed">
+          Memeriksa pola phishing, link mencurigakan, dan indikator penipuan...
+        </AppText>
+        <ActivityIndicator color="#C1592E" style={{ marginTop: 20 }} />
+      </SafeAreaView>
+    );
+  }
+
+  // ── Gmail Email List (Pilih Email) ───────────────────────────────
+  if (mode === 'gmail_list') {
+    return (
+      <SafeAreaView edges={['top']} className="flex-1 bg-cream">
+        {/* Header */}
+        <View className="px-5 pt-4 pb-3 bg-cream border-b border-espresso/8">
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center gap-3">
+              <TouchableOpacity
+                onPress={() => { setMode('choose'); setEmails([]); }}
+                className="w-9 h-9 rounded-full bg-espresso/10 items-center justify-center"
+              >
+                <X color="#3E2E22" size={18} />
+              </TouchableOpacity>
+              <View>
+                <AppText size="lg" className="text-espresso font-heading">Pilih Email</AppText>
+                <AppText size="xs" className="text-text-muted font-body">{emails.length} email dari Inbox Gmail</AppText>
+              </View>
+            </View>
+            <TouchableOpacity onPress={toggleSelectAll} className="bg-espresso/8 px-3 py-1.5 rounded-full">
+              <AppText size="xs" className="text-espresso font-heading">
+                {selectedIds.size === emails.length ? 'Batal Semua' : 'Pilih Semua'}
               </AppText>
-              {mode === "gmail" && (
-                <AppText size="xs" className="text-text-muted font-body">
-                  Batch #{batchIndex} • {scannedCount} Email Dipindai
-                </AppText>
-              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Selected count bar */}
+          {selectedIds.size > 0 && (
+            <View className="bg-terracotta/10 rounded-xl px-3 py-2 flex-row items-center gap-2 border border-terracotta/20">
+              <CheckSquare color="#C1592E" size={16} />
+              <AppText size="xs" className="text-terracotta font-heading">
+                {selectedIds.size} email dipilih untuk dianalisis
+              </AppText>
+            </View>
+          )}
+        </View>
+
+        <ScrollView className="flex-1 px-5 pt-3" contentContainerStyle={{ paddingBottom: 140 }}>
+          {emails.map(email => (
+            <EmailListItem
+              key={email.id}
+              email={email}
+              selected={selectedIds.has(email.id)}
+              onToggle={() => toggleSelect(email.id)}
+            />
+          ))}
+        </ScrollView>
+
+        {/* Analyze button fixed at bottom */}
+        <View className="px-5 pb-8 pt-3 bg-cream border-t border-espresso/8">
+          <TouchableOpacity
+            onPress={handleAnalyzeSelected}
+            activeOpacity={selectedIds.size === 0 ? 1 : 0.85}
+            className="rounded-2xl py-4 items-center flex-row justify-center gap-2"
+            style={{ backgroundColor: selectedIds.size === 0 ? '#9E8E7E' : '#C1592E' }}
+          >
+            <Sparkles color="#FFFFFF" size={18} />
+            <AppText size="base" className="text-white font-heading">
+              {selectedIds.size === 0
+                ? 'Pilih Email Dulu'
+                : `Analisis ${selectedIds.size} Email dengan Gemini`}
+            </AppText>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Result View ──────────────────────────────────────────────────
+  if (mode === 'result' && result) {
+    return (
+      <SafeAreaView edges={['top']} className="flex-1 bg-cream">
+        <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 120 }}>
+
+          {/* Header */}
+          <View className="flex-row items-center justify-between mb-5">
+            <View>
+              <AppText size="xl" className="text-espresso font-heading">Hasil Analisis</AppText>
+              <View className="flex-row items-center gap-1.5 mt-0.5">
+                <Sparkles color="#C1592E" size={12} />
+                <AppText size="xs" className="text-terracotta font-body">Dianalisis oleh Gemini AI</AppText>
+              </View>
             </View>
             <TouchableOpacity
               onPress={handleReset}
               className="w-9 h-9 rounded-full bg-espresso/10 items-center justify-center"
-              accessibilityLabel="Tutup hasil analisis"
+              accessibilityLabel="Kembali ke menu pilihan"
             >
               <X color="#3E2E22" size={18} />
             </TouchableOpacity>
           </View>
 
-          <View
-            className="bg-surface rounded-[24px] shadow-sm mb-4"
-            style={{ elevation: 2 }}
-          >
-            <ScoreRing score={result.score} verdict={result.verdict} />
-            <View className="px-5 pb-5">
-              <AppText
-                size="sm"
-                className="text-espresso/80 font-body text-center leading-relaxed"
-              >
-                {result.summary}
-              </AppText>
-            </View>
+          {/* Score */}
+          <ScoreRing score={result.score} verdict={result.verdict} />
+
+          {/* Summary */}
+          <View className="bg-surface rounded-2xl p-4 mb-5 border border-espresso/8">
+            <AppText size="sm" className="text-espresso/80 font-body leading-relaxed">{result.summary}</AppText>
           </View>
 
-          <AppText
-            size="xs"
-            className="text-text-muted font-display uppercase tracking-widest mb-3"
-          >
-            Temuan Detail
-          </AppText>
-          {result.flags.map((flag) => (
-            <FlagCard key={flag.id} flag={flag} />
-          ))}
-
-          {mode === "gmail" && gmailEmails.length > 0 && (
+          {/* Flags */}
+          {result.flags.length > 0 && (
             <>
-              <AppText
-                size="xs"
-                className="text-text-muted font-display uppercase tracking-widest mb-3 mt-4"
-              >
-                Email Batch #{batchIndex}
+              <AppText size="xs" className="text-text-muted font-display uppercase tracking-widest mb-3">
+                Temuan Detail
               </AppText>
-              {gmailEmails.slice(0, 5).map((email, i) => (
-                <View
-                  key={i}
-                  className="bg-surface rounded-2xl p-4 mb-2 border border-espresso/5"
-                >
-                  <AppText
-                    size="xs"
-                    className="text-espresso/50 font-body"
-                    numberOfLines={1}
-                  >
+              {result.flags.map(flag => <FlagCard key={flag.id} flag={flag} />)}
+            </>
+          )}
+
+          {/* Analyzed emails list */}
+          {analyzedEmails.length > 0 && (
+            <>
+              <AppText size="xs" className="text-text-muted font-display uppercase tracking-widest mb-3 mt-4">
+                Email Yang Dianalisis ({analyzedEmails.length})
+              </AppText>
+              {analyzedEmails.map((email, i) => (
+                <View key={i} className="bg-surface rounded-2xl p-4 mb-2 border border-espresso/5">
+                  <AppText size="xs" className="text-espresso/50 font-body" numberOfLines={1}>
                     Dari: {email.from}
                   </AppText>
-                  <AppText
-                    size="sm"
-                    className="text-espresso font-heading mt-0.5"
-                    numberOfLines={1}
-                  >
+                  <AppText size="sm" className="text-espresso font-heading mt-0.5" numberOfLines={1}>
                     {email.subject}
                   </AppText>
-                  <AppText
-                    size="xs"
-                    className="text-text-muted font-body mt-1"
-                    numberOfLines={2}
-                  >
+                  <AppText size="xs" className="text-text-muted font-body mt-1" numberOfLines={2}>
                     {email.snippet}
                   </AppText>
                 </View>
               ))}
-              {gmailEmails.length > 5 && (
-                <AppText
-                  size="xs"
-                  className="text-text-muted font-body text-center mt-1"
-                >
-                  ...dan {gmailEmails.length - 5} email lainnya
-                </AppText>
-              )}
             </>
           )}
 
-          {mode === "gmail" ? (
-            <View className="gap-2.5 mt-5">
+          {/* Action buttons */}
+          <View className="gap-3 mt-5">
+            {emails.length > 0 && (
               <TouchableOpacity
+                onPress={() => { setResult(null); setMode('gmail_list'); }}
+                activeOpacity={0.85}
                 className="bg-espresso rounded-2xl py-4 items-center flex-row justify-center gap-2"
-                onPress={handleScanNextBatch}
-                activeOpacity={0.8}
-                disabled={!nextPageToken || isConnectingGmail}
-                style={{
-                  opacity: nextPageToken && !isConnectingGmail ? 1 : 0.6,
-                }}
               >
-                {isConnectingGmail ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Mail color="#FFFFFF" size={18} />
-                    <AppText size="sm" className="text-white font-heading">
-                      {nextPageToken
-                        ? `Pindai 10 Email Berikutnya (Batch #${batchIndex + 1})`
-                        : "Semua Inbox Telah Dipindai"}
-                    </AppText>
-                  </>
-                )}
+                <RotateCcw color="#FFFFFF" size={16} />
+                <AppText size="sm" className="text-white font-heading">Pilih Email Lain</AppText>
               </TouchableOpacity>
-              <TouchableOpacity
-                className="border border-espresso/20 rounded-2xl py-3.5 items-center"
-                onPress={handleReset}
-                activeOpacity={0.8}
-              >
-                <AppText size="sm" className="text-espresso font-heading">
-                  Kembali ke Menu Pilihan
-                </AppText>
-              </TouchableOpacity>
-            </View>
-          ) : (
+            )}
             <TouchableOpacity
-              className="mt-5 bg-espresso rounded-2xl py-4 items-center"
               onPress={handleReset}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
+              className="border border-espresso/20 rounded-2xl py-3.5 items-center"
             >
-              <AppText size="sm" className="text-white font-heading">
-                Analisis Teks Lainnya
-              </AppText>
+              <AppText size="sm" className="text-espresso font-heading">Kembali ke Menu Pilihan</AppText>
             </TouchableOpacity>
-          )}
+          </View>
+
         </ScrollView>
       </SafeAreaView>
     );
   }
 
-  if (mode === "choose") {
+  // ── Choose Mode ──────────────────────────────────────────────────
+  if (mode === 'choose') {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 bg-cream">
-        <ScrollView
-          className="flex-1 px-5 pt-4"
-          contentContainerStyle={{ paddingBottom: 120 }}
-        >
-          <View className="mb-6">
+      <SafeAreaView edges={['top']} className="flex-1 bg-cream">
+        <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 120 }}>
+
+          <Animated.View entering={FadeInDown.springify()} className="mb-6">
             <View className="flex-row items-center gap-3 mb-1">
               <View className="w-10 h-10 rounded-2xl bg-terracotta items-center justify-center">
                 <Mail color="#FFFFFF" size={18} />
               </View>
-              <AppText size="2xl" className="text-espresso font-heading">
-                Cek Email Phishing
-              </AppText>
+              <AppText size="2xl" className="text-espresso font-heading">Cek Email Phishing</AppText>
             </View>
-            <AppText
-              size="sm"
-              className="text-text-muted font-body leading-relaxed"
+            <AppText size="sm" className="text-text-muted font-body leading-relaxed">
+              Gunakan Gemini AI untuk mendeteksi phishing, link berbahaya, dan modus penipuan dalam email atau pesan.
+            </AppText>
+          </Animated.View>
+
+          {/* Gemini badge */}
+          <Animated.View entering={FadeInDown.delay(50).springify()} className="flex-row items-center gap-2 bg-terracotta/10 border border-terracotta/20 rounded-xl px-3 py-2.5 mb-5">
+            <Sparkles color="#C1592E" size={16} />
+            <AppText size="xs" className="text-terracotta font-body flex-1 leading-relaxed">
+              Ditenagai oleh Google Gemini 1.5 Flash — analisis AI yang akurat dan kontekstual untuk penipuan Indonesia.
+            </AppText>
+          </Animated.View>
+
+          {/* Option 1: Gmail */}
+          <Animated.View entering={FadeInDown.delay(100).springify()}>
+            <TouchableOpacity
+              className="bg-espresso rounded-[20px] p-5 mb-3 flex-row items-center gap-4"
+              onPress={handleConnectGmail}
+              activeOpacity={0.85}
             >
-              VOKAL menganalisis email/pesan mencurigakan menggunakan 8 kategori
-              pola penipuan yang umum di Indonesia.
-            </AppText>
-          </View>
+              <View className="w-14 h-14 rounded-2xl bg-mustard/20 items-center justify-center">
+                <Mail color="#E8A33D" size={28} />
+              </View>
+              <View className="flex-1">
+                <View className="flex-row items-center gap-2 mb-1">
+                  <AppText size="base" className="text-white font-heading">Sambungkan Gmail</AppText>
+                  {isGoogleConnected && (
+                    <View className="bg-olive/30 px-2 py-0.5 rounded-full">
+                      <AppText size="xs" className="text-olive font-bold">TERHUBUNG</AppText>
+                    </View>
+                  )}
+                </View>
+                <AppText size="xs" className="text-surface/60 font-body leading-relaxed">
+                  Pilih email mana yang mau dianalisis dari {GMAIL_FETCH_LIMIT} terbaru
+                </AppText>
+              </View>
+              <ChevronRight color="rgba(255,255,255,0.4)" size={20} />
+            </TouchableOpacity>
+          </Animated.View>
 
-          {/* HOW IT WORKS */}
-          <View className="bg-surface rounded-[20px] p-4 mb-5 shadow-sm">
-            <AppText size="sm" className="text-espresso font-heading mb-3">
-              Apa yang Dianalisis?
-            </AppText>
-            {[
-              "Domain palsu & link penyingkat berbahaya",
-              "Kata-kata mendesak & manipulatif",
-              "Modus penipuan berhadiah & lotere",
-              "Penyamaran sebagai bank atau pemerintah",
-              "Permintaan data finansial & OTP",
-              "Pola investasi bodong",
-            ].map((item, i) => (
-              <AppText
-                key={i}
-                size="xs"
-                className="text-espresso/70 font-body mb-1.5"
-              >
-                {item}
-              </AppText>
-            ))}
-          </View>
-
-          {/* OPTION 1: Gmail OAuth */}
-          <TouchableOpacity
-            className="bg-espresso rounded-[20px] p-5 mb-3 flex-row items-center gap-4"
-            onPress={handleConnectGmail}
-            activeOpacity={0.85}
-          >
-            <View className="w-14 h-14 rounded-2xl bg-surface/15 items-center justify-center">
-              <Mail color="#3E2E22" size={28} />
-            </View>
-            <View className="flex-1">
-              <AppText size="base" className="text-white font-heading mb-0.5">
-                Sambungkan Gmail
-              </AppText>
-              <AppText
-                size="xs"
-                className="text-surface/60 font-body leading-relaxed"
-              >
-                VOKAL scan {GMAIL_FETCH_LIMIT} email terbaru secara lokal
-              </AppText>
-            </View>
-            <ChevronRight color="rgba(255,255,255,0.5)" size={20} />
-          </TouchableOpacity>
-
-          {/* OPTION 2: Manual paste */}
-          <TouchableOpacity
-            className="bg-surface border border-espresso/10 rounded-[20px] p-5 flex-row items-center gap-4 shadow-sm"
-            onPress={() => setMode("manual")}
-            activeOpacity={0.85}
-          >
-            <View className="w-14 h-14 rounded-2xl bg-olive/10 items-center justify-center">
-              <FileText color="#74822F" size={28} />
-            </View>
-            <View className="flex-1">
-              <AppText
-                size="base"
-                className="text-espresso font-heading mb-0.5"
-              >
-                Tempel Teks Manual
-              </AppText>
-              <AppText
-                size="xs"
-                className="text-text-muted font-body leading-relaxed"
-              >
-                Copy-paste isi email/SMS/WA yang mencurigakan
-              </AppText>
-            </View>
-            <ChevronRight color="#6B5F52" size={20} />
-          </TouchableOpacity>
+          {/* Option 2: Manual */}
+          <Animated.View entering={FadeInDown.delay(150).springify()}>
+            <TouchableOpacity
+              className="bg-surface border border-espresso/10 rounded-[20px] p-5 flex-row items-center gap-4"
+              onPress={() => setMode('manual')}
+              activeOpacity={0.85}
+            >
+              <View className="w-14 h-14 rounded-2xl bg-olive/10 items-center justify-center">
+                <FileText color="#74822F" size={28} />
+              </View>
+              <View className="flex-1">
+                <AppText size="base" className="text-espresso font-heading mb-1">Tempel Teks Manual</AppText>
+                <AppText size="xs" className="text-text-muted font-body leading-relaxed">
+                  Copy-paste isi email, SMS, atau pesan WA yang mencurigakan
+                </AppText>
+              </View>
+              <ChevronRight color="#6B5F52" size={20} />
+            </TouchableOpacity>
+          </Animated.View>
 
           {/* Privacy note */}
-          <View className="flex-row gap-2 mt-5 items-start">
+          <Animated.View entering={FadeInDown.delay(200).springify()} className="flex-row gap-2 mt-5 items-start">
             <ShieldCheck color="#74822F" size={16} />
-            <AppText
-              size="sm"
-              className="text-olive font-body flex-1 leading-relaxed"
-            >
-              Analisis dilakukan 100% di perangkatmu. Email & teks tidak pernah
-              keluar dari HP kamu.
+            <AppText size="xs" className="text-olive font-body flex-1 leading-relaxed">
+              Teks diproses secara aman melalui Supabase Edge Function. API key Gemini tidak pernah ada di perangkatmu.
             </AppText>
-          </View>
+          </Animated.View>
+
         </ScrollView>
       </SafeAreaView>
     );
   }
 
+  // ── Manual Mode ──────────────────────────────────────────────────
   return (
-    <SafeAreaView edges={["top"]} className="flex-1 bg-cream">
-      <ScrollView
-        className="flex-1 px-5 pt-4"
-        contentContainerStyle={{ paddingBottom: 120 }}
-      >
+    <SafeAreaView edges={['top']} className="flex-1 bg-cream">
+      <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 120 }}>
+
         <View className="flex-row items-center gap-3 mb-5">
           <TouchableOpacity
-            onPress={() => setMode("choose")}
+            onPress={() => setMode('choose')}
             className="w-9 h-9 rounded-full bg-espresso/10 items-center justify-center"
             accessibilityLabel="Kembali"
           >
             <X color="#3E2E22" size={18} />
           </TouchableOpacity>
-          <AppText size="xl" className="text-espresso font-heading">
-            Tempel Teks Email
-          </AppText>
+          <View>
+            <AppText size="xl" className="text-espresso font-heading">Tempel Teks</AppText>
+            <AppText size="xs" className="text-text-muted font-body">Analisis dengan Gemini AI</AppText>
+          </View>
         </View>
 
         <AppText size="xs" className="text-text-muted font-body mb-2">
-          Salin seluruh teks email atau pesan mencurigakan, lalu tempel di bawah
-          ini:
+          Salin seluruh teks email atau pesan mencurigakan, lalu tempel di bawah ini:
         </AppText>
 
         <TextInput
-          className="bg-surface rounded-2xl p-4 font-body text-espresso border border-espresso/10"
-          style={{
-            minHeight: 220,
-            textAlignVertical: "top",
-            fontSize: 14,
-            fontFamily: "DMSans-Regular",
-          }}
-          placeholder="Contoh: 'Selamat! Anda terpilih memenangkan hadiah Rp 50.000.000. Klik link berikut untuk klaim...'"
+          className="bg-surface rounded-2xl p-4 text-espresso border border-espresso/10"
+          style={{ minHeight: 200, textAlignVertical: 'top', fontSize: 14, fontFamily: 'DMSans-Regular' }}
+          placeholder="Contoh: 'Selamat! Anda terpilih memenangkan hadiah Rp 50.000.000. Klik link berikut...'"
           placeholderTextColor="#9E8E7E"
           multiline
           value={manualText}
@@ -584,24 +538,27 @@ export default function CekEmailScreen() {
           accessibilityLabel="Kolom teks email untuk dianalisis"
         />
 
-        <AppText size="xs" className="text-text-muted font-body mt-2 mb-4">
-          {manualText.length} karakter dimasukkan
+        <AppText size="xs" className="text-text-muted font-body mt-2 mb-5">
+          {manualText.length} karakter
         </AppText>
 
         <TouchableOpacity
-          className={`rounded-2xl py-4 items-center ${isAnalyzing ? "bg-espresso/50" : "bg-espresso"}`}
+          className="rounded-2xl py-4 items-center flex-row justify-center gap-2"
+          style={{ backgroundColor: manualText.length < 20 ? '#9E8E7E' : '#C1592E' }}
           onPress={handleAnalyzeManual}
-          disabled={isAnalyzing}
-          activeOpacity={0.8}
+          disabled={manualText.length < 20}
+          activeOpacity={0.85}
         >
-          {isAnalyzing ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <AppText size="sm" className="text-white font-heading">
-              Analisis Sekarang
-            </AppText>
-          )}
+          <Sparkles color="#FFFFFF" size={18} />
+          <AppText size="sm" className="text-white font-heading">Analisis dengan Gemini</AppText>
         </TouchableOpacity>
+
+        {manualText.length < 20 && manualText.length > 0 && (
+          <AppText size="xs" className="text-text-muted font-body text-center mt-2">
+            Perlu minimal 20 karakter
+          </AppText>
+        )}
+
       </ScrollView>
     </SafeAreaView>
   );
