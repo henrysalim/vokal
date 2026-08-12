@@ -21,9 +21,9 @@ import {
   Square
 } from 'lucide-react-native';
 import * as Contacts from 'expo-contacts';
-import { FAMILY_MEMBERS } from '../../data/mock';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../../context/auth';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import DashboardAnak from '../../components/ui/DashboardAnak';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import { AppText } from '../../components/ui/AppText';
@@ -37,26 +37,71 @@ const MOCK_FALLBACK_CONTACTS: ContactItem[] = [
   { id: 'c4', contactType: Contacts.ContactTypes.Person, name: 'Om Roy', phoneNumbers: [{ number: '+62 817-5566-7788', label: 'Seluler' }] },
 ];
 
+type FamilyMember = {
+  id: string;
+  name: string;
+  role: string;
+  status: string;
+  verified: boolean;
+};
+
 export default function KeluargaScreen() {
   const { user } = useAuth();
   const currentUserName = user?.name || 'Pengguna VOKAL';
 
-  const [familyMembers, setFamilyMembers] = useState(() => [
-    { id: user?.id || 'my-user', name: `${currentUserName} (Anda)`, role: 'Kepala Keluarga (Admin)', status: 'Aman', verified: true }
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(() => [
+    { id: user?.id || 'my-user', name: `${currentUserName} (Anda)`, role: 'Admin', status: 'Aman', verified: true }
   ]);
 
+  // Load anggota keluarga dari Supabase berdasarkan family_id yang sama
   React.useEffect(() => {
-    if (user?.name) {
-      setFamilyMembers(prev => {
-        const hasMe = prev.some(m => m.role.includes('Anda'));
-        if (!hasMe) {
-          return [{ id: user.id, name: `${user.name} (Anda)`, role: 'Kepala Keluarga (Admin)', status: 'Aman', verified: true }, ...prev];
-        } else {
-          return prev.map(m => m.role.includes('Anda') ? { ...m, id: user.id, name: `${user.name} (Anda)` } : m);
-        }
-      });
-    }
-  }, [user?.name, user?.id]);
+    if (!isSupabaseConfigured() || !user?.id) return;
+
+    const loadFamilyMembers = async () => {
+      // Dapatkan family_id user saat ini
+      const { data: myProfile } = await supabase
+        .from('profiles')
+        .select('family_id, family_secret')
+        .eq('id', user.id)
+        .single();
+
+      const myFamilyId = myProfile?.family_id;
+
+      // Selalu tampilkan user sendiri
+      const selfMember: FamilyMember = {
+        id: user.id,
+        name: `${user.name || currentUserName} (Anda)`,
+        role: 'Admin',
+        status: 'Aman',
+        verified: true,
+      };
+
+      if (!myFamilyId) {
+        setFamilyMembers([selfMember]);
+        return;
+      }
+
+      // Load semua anggota yang family_id-nya sama
+      const { data: members } = await supabase
+        .from('profiles')
+        .select('id, name, xp, avatar_initials')
+        .eq('family_id', myFamilyId)
+        .neq('id', user.id);
+
+      const otherMembers: FamilyMember[] = (members || []).map((m: any) => ({
+        id: m.id,
+        name: m.name || 'Anggota Keluarga',
+        role: 'Anggota',
+        status: 'Aman',
+        verified: true,
+      }));
+
+      setFamilyMembers([selfMember, ...otherMembers]);
+    };
+
+    loadFamilyMembers();
+  }, [user?.id]);
+
   const [deviceContacts, setDeviceContacts] = useState<ContactItem[]>([]);
   const [showContactsModal, setShowContactsModal] = useState(false);
   const [isLoadingContacts, setIsLoadingContacts] = useState(false);

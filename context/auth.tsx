@@ -23,7 +23,7 @@ type AuthContextValue = {
   isInitializing: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<boolean>;
-  signUpWithEmail: (name: string, email: string, password: string) => Promise<boolean>;
+  signUpWithEmail: (name: string, email: string, password: string, familyCode?: string) => Promise<boolean>;
   signUpWithGoogle: () => Promise<void>;
   signOut: () => void;
   completeOnboarding: () => void;
@@ -223,7 +223,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           provider: 'google',
           options: {
             redirectTo: redirectUrl,
-            skipBrowserRedirect: true, // Kita lewati otomatisasi redirect bawaan Supabase
+            skipBrowserRedirect: true,
+            // Minta scope Gmail agar provider_token bisa akses Gmail API
+            scopes: 'openid email profile https://www.googleapis.com/auth/gmail.readonly',
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+            },
           }
         });
 
@@ -233,7 +239,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (data?.url) {
-
           const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
 
           if (result.type === 'success' && result.url) {
@@ -246,14 +251,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               accessToken = params.get('access_token');
               refreshToken = params.get('refresh_token');
             } else {
-
               const params = new URL(result.url).searchParams;
               accessToken = params.get('access_token');
               refreshToken = params.get('refresh_token');
             }
 
             if (accessToken && refreshToken) {
-              const { error: sessionError } = await supabase.auth.setSession({
+              const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
                 access_token: accessToken,
                 refresh_token: refreshToken
               });
@@ -262,12 +266,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 Alert.alert('Gagal Mengaitkan Sesi Google', sessionError.message);
               } else {
                 setIsOnboarded(true);
+
+                // Simpan provider_token (Google access token) ke profiles untuk Gmail API
+                const providerToken = sessionData?.session?.provider_token;
+                if (providerToken && sessionData?.session?.user?.id) {
+                  const oneMonthLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                  await supabase
+                    .from('profiles')
+                    .update({
+                      gmail_access_token: providerToken,
+                      gmail_token_obtained_at: new Date().toISOString(),
+                      gmail_connected_until: oneMonthLater.toISOString(),
+                    })
+                    .eq('id', sessionData.session.user.id);
+                }
               }
             } else {
               Alert.alert('Gagal Login', 'Token otentikasi Google tidak ditemukan dalam respon.');
             }
           }
         }
+
       } else {
 
         setUser({
@@ -340,10 +359,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signUpWithEmail = useCallback(
-    async (nameInput: string, emailInput: string, passwordInput: string): Promise<boolean> => {
+    async (nameInput: string, emailInput: string, passwordInput: string, familyCode?: string): Promise<boolean> => {
       const cleanName = nameInput.trim();
       const cleanEmail = emailInput.trim().toLowerCase();
       const cleanPassword = passwordInput.trim();
+      const cleanFamilyCode = familyCode?.trim().toUpperCase() || null;
 
       if (!cleanName || !cleanEmail || !cleanPassword) {
         Alert.alert('Error', 'Semua kolom wajib diisi.');
@@ -375,6 +395,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             if (signInData?.user) {
               await fetchUserProfile(signInData.user.id, cleanEmail, cleanName);
+
+              // --- Family Code: link ke keluarga yang sudah ada ---
+              if (cleanFamilyCode) {
+                const { data: existingFamily } = await supabase
+                  .from('profiles')
+                  .select('family_id')
+                  .eq('family_secret', cleanFamilyCode)
+                  .not('id', 'eq', signInData.user.id)
+                  .limit(1)
+                  .single();
+
+                if (existingFamily?.family_id) {
+                  // Bergabung ke family_id yang sudah ada
+                  await supabase
+                    .from('profiles')
+                    .update({
+                      family_id: existingFamily.family_id,
+                      family_secret: cleanFamilyCode,
+                    })
+                    .eq('id', signInData.user.id);
+                } else {
+                  // Buat family baru dengan kode ini sebagai founder
+                  const newFamilyId = `family_${Date.now()}`;
+                  await supabase
+                    .from('profiles')
+                    .update({
+                      family_id: newFamilyId,
+                      family_secret: cleanFamilyCode,
+                    })
+                    .eq('id', signInData.user.id);
+                }
+              }
             } else {
               setUser({ id: data.user.id, name: cleanName, email: cleanEmail, avatarInitials: initials });
             }
