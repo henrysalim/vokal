@@ -34,9 +34,8 @@ export default function AnalisisHubScreen({ navigation }: AnalisisHubScreenProps
     {
       id: 'cek_email',
       title: 'Cek Email',
-      description: 'Sambungkan Gmail atau tempel teks email — deteksi phishing & domain palsu',
+      description: 'Sambungkan Gmail atau tempel teks email, deteksi phishing & domain palsu',
       icon: <Mail color="#FFFFFF" size={24} />,
-      badge: 'BARU',
       badgeColor: 'bg-olive',
       bg: 'bg-terracotta',
       screenName: 'CekEmail',
@@ -44,9 +43,8 @@ export default function AnalisisHubScreen({ navigation }: AnalisisHubScreenProps
     {
       id: 'cek_pesan',
       title: 'Cek Pesan/SMS',
-      description: 'Tempel teks WA, SMS, atau chat — analisis 8 pola penipuan sekaligus',
+      description: 'Tempel teks WA, SMS, atau chat. Analisis 8 pola penipuan sekaligus',
       icon: <MessageSquare color="#FFFFFF" size={24} />,
-      badge: 'BARU',
       badgeColor: 'bg-mustard',
       bg: 'bg-olive',
       screenName: 'CekPesan',
@@ -104,13 +102,8 @@ export default function AnalisisHubScreen({ navigation }: AnalisisHubScreenProps
               <View className="flex-1">
                 <View className="flex-row items-center gap-2 mb-0.5">
                   <AppText size="base" className="text-white font-heading">{tool.title}</AppText>
-                  {tool.badge && (
-                    <View className={`${tool.badgeColor} px-2 py-0.5 rounded-full`}>
-                      <AppText size="xs" className="text-white font-display" style={{ fontSize: 9 }}>{tool.badge}</AppText>
-                    </View>
-                  )}
                 </View>
-                <AppText size="xs" className="text-surface/70 font-body leading-relaxed">{tool.description}</AppText>
+                <AppText size="sm" className="text-surface/70 font-body leading-relaxed">{tool.description}</AppText>
               </View>
               <ChevronRight color="rgba(255,255,255,0.5)" size={20} />
             </TouchableOpacity>
@@ -125,7 +118,7 @@ export default function AnalisisHubScreen({ navigation }: AnalisisHubScreenProps
             <AppText size="base" className="text-espresso font-heading">Kontak Darurat</AppText>
           </View>
             <TouchableOpacity onPress={() => navigation.navigate('KontakDarurat')} className="flex-row items-center gap-1">
-              <AppText size="xs" className="text-mustard font-body">Semua</AppText>
+              <AppText size="sm" className="text-mustard font-body">Semua</AppText>
               <ChevronRight color="#E8A33D" size={14} />
             </TouchableOpacity>
           </View>
@@ -145,7 +138,7 @@ export default function AnalisisHubScreen({ navigation }: AnalisisHubScreenProps
                 </View>
                 <View className="flex-1">
                   <AppText size="sm" className="text-espresso font-heading">{contact.shortName}</AppText>
-                  <AppText size="xs" className="text-text-muted font-body">{contact.available}</AppText>
+                  <AppText size="sm" className="text-text-muted font-body">{contact.available}</AppText>
                 </View>
                 <View className="flex-row items-center gap-1.5 bg-espresso/8 rounded-xl px-3 py-2">
                   <Phone color="#3E2E22" size={13} />

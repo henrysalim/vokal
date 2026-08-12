@@ -9,9 +9,15 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as SplashScreen from "expo-splash-screen";
-import { GraduationCap, Home, ScanSearch, User, Users } from "lucide-react-native";
+import {
+  GraduationCap,
+  Home,
+  ScanSearch,
+  User,
+  Users,
+} from "lucide-react-native";
 import React, { useCallback } from "react";
-import { ActivityIndicator, Text, TextProps, View } from "react-native";
+import { ActivityIndicator, TextProps, View } from "react-native";
 import "./global.css";
 
 import AkademiScreen from "./src/screens/Akademi/AkademiScreen";
@@ -21,17 +27,18 @@ import CekSuaraScreen from "./src/screens/CekSuara/CekSuaraScreen";
 import HomeScreen from "./src/screens/Home/HomeScreen";
 import KeluargaScreen from "./src/screens/Keluarga/KeluargaScreen";
 import OnboardingScreen from "./src/screens/Onboarding/OnboardingScreen";
-import ProfilScreen from "./src/screens/Profil/ProfilScreen";
 import EditProfilScreen from "./src/screens/Profil/EditProfilScreen";
+import ProfilScreen from "./src/screens/Profil/ProfilScreen";
 
 import AnalisisHubScreen from "./src/screens/Analisis/AnalisisHubScreen";
 import CekEmailScreen from "./src/screens/Analisis/CekEmailScreen";
+import CekNomorScreen from "./src/screens/Analisis/CekNomorScreen";
 import CekPesanScreen from "./src/screens/Analisis/CekPesanScreen";
 import KontakDaruratScreen from "./src/screens/Analisis/KontakDaruratScreen";
-import CekNomorScreen from "./src/screens/Analisis/CekNomorScreen";
 
 import { AuthProvider, useAuth } from "./context/auth";
 import { ConfirmModalProvider } from "./src/components/ui/ConfirmModal";
+import { GoogleAuthProvider } from "./src/context/GoogleAuthContext";
 import { LansiaProvider } from "./src/context/LansiaContext";
 import { ScamProvider } from "./src/context/ScamContext";
 import { UserProvider } from "./src/context/UserContext";
@@ -65,7 +72,10 @@ function AnalisisNavigator() {
       <AnalisisStack.Screen name="CekEmail" component={CekEmailScreen} />
       <AnalisisStack.Screen name="CekPesan" component={CekPesanScreen} />
       <AnalisisStack.Screen name="CekNomor" component={CekNomorScreen} />
-      <AnalisisStack.Screen name="KontakDarurat" component={KontakDaruratScreen} />
+      <AnalisisStack.Screen
+        name="KontakDarurat"
+        component={KontakDaruratScreen}
+      />
     </AnalisisStack.Navigator>
   );
 }
@@ -185,26 +195,16 @@ function MainNavigator() {
       </View>
     );
   }
+
+  const initialRouteName = !isOnboarded ? "Onboarding" : !user ? "Login" : "Root";
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!isOnboarded ? (
-        <>
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="Root" component={TabNavigator} />
-        </>
-      ) : !user ? (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="Root" component={TabNavigator} />
-          <Stack.Screen name="EditProfil" component={EditProfilScreen} />
-        </>
-      )}
+    <Stack.Navigator initialRouteName={initialRouteName} screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Root" component={TabNavigator} />
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="EditProfil" component={EditProfilScreen} />
     </Stack.Navigator>
   );
 }
@@ -230,22 +230,24 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <View
-        style={{ flex: 1, backgroundColor: "#F0EAE0" }}
-        onLayout={onLayoutRootView}
-      >
-        <NavigationContainer>
-          <UserProvider>
-            <LansiaProvider>
-              <ScamProvider>
-                <ConfirmModalProvider>
-                  <MainNavigator />
-                </ConfirmModalProvider>
-              </ScamProvider>
-            </LansiaProvider>
-          </UserProvider>
-        </NavigationContainer>
-      </View>
+      <GoogleAuthProvider>
+        <UserProvider>
+          <LansiaProvider>
+            <ScamProvider>
+              <ConfirmModalProvider>
+                <View
+                  style={{ flex: 1, backgroundColor: "#F0EAE0" }}
+                  onLayout={onLayoutRootView}
+                >
+                  <NavigationContainer>
+                    <MainNavigator />
+                  </NavigationContainer>
+                </View>
+              </ConfirmModalProvider>
+            </ScamProvider>
+          </LansiaProvider>
+        </UserProvider>
+      </GoogleAuthProvider>
     </AuthProvider>
   );
 }

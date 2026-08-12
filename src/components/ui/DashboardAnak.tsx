@@ -17,7 +17,6 @@ export default function DashboardAnak() {
         <View className="flex-row justify-between items-center mb-4">
           <View>
             <AppText size="lg" className="font-heading text-espresso">{blockedCalls.length} Panggilan Diblokir</AppText>
-            <AppText size="xs" className="font-body text-text-muted mt-1">Sistem berhasil melindungi keluarga Anda.</AppText>
           </View>
           <View className="w-12 h-12 bg-olive/20 rounded-full items-center justify-center">
             <ShieldAlert color="#74822F" size={24} />
@@ -25,7 +24,7 @@ export default function DashboardAnak() {
         </View>
 
         <View className="bg-cream rounded-xl p-3 border border-espresso/5">
-          <AppText size="xs" className="font-heading text-espresso mb-3">Log Panggilan Terakhir:</AppText>
+          <AppText size="sm" className="font-heading text-espresso mb-3">Log Panggilan Terakhir:</AppText>
 
           {blockedCalls.length === 0 ? (
             <AppText size="xs" className="font-body text-text-muted text-center py-2 italic">Belum ada aktivitas mencurigakan.</AppText>
@@ -36,11 +35,11 @@ export default function DashboardAnak() {
                   <AppText size="xs">📞</AppText>
                 </View>
                 <View className="flex-1">
-                  <AppText size="xs" className="font-heading text-warning">Panggilan Ditolak</AppText>
-                  <AppText size="xs" className="font-body text-espresso leading-relaxed mt-0.5">{call.reason}</AppText>
+                  <AppText size="sm" className="font-heading text-warning">Panggilan Ditolak</AppText>
+                  <AppText size="sm" className="font-body text-espresso leading-relaxed mt-0.5">{call.reason}</AppText>
                   <View className="flex-row items-center gap-1 mt-1">
                     <Clock color="#A39686" size={10} />
-                    <AppText size="xs" className="font-body text-text-muted">{call.date}</AppText>
+                    <AppText size="sm" className="font-body text-text-muted">{call.date}</AppText>
                   </View>
                 </View>
               </View>

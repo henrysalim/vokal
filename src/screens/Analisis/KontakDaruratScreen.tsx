@@ -14,10 +14,10 @@ function ContactCard({ contact, onCall }: { contact: EmergencyContact; onCall: (
         </View>
         <View className="flex-1">
           <AppText size="sm" className="text-espresso font-heading leading-tight">{contact.name}</AppText>
-          <AppText size="xs" className="text-text-muted font-body mt-0.5" numberOfLines={2}>{contact.description}</AppText>
+          <AppText size="sm" className="text-text-muted font-body mt-0.5" numberOfLines={2}>{contact.description}</AppText>
           <View className="flex-row items-center mt-1 gap-1">
             <View className="w-1.5 h-1.5 rounded-full bg-olive" />
-            <AppText size="xs" className="text-olive font-body">{contact.available}</AppText>
+            <AppText size="sm" className="text-olive font-body">{contact.available}</AppText>
           </View>
         </View>
       </View>
@@ -79,22 +79,22 @@ export default function KontakDaruratScreen() {
           <AlertTriangle color="#E8A33D" size={18} />
           <View className="flex-1">
             <AppText size="sm" className="text-espresso font-heading mb-0.5">Jangan panik, simpan nomor ini</AppText>
-            <AppText size="xs" className="text-espresso/70 font-body leading-relaxed">
+            <AppText size="sm" className="text-espresso/70 text-justify font-body leading-relaxed">
               Penipu sering menyamar sebagai lembaga resmi. Jika ada yang menghubungimu mengaku dari instansi ini, tutup telepon dan hubungi langsung lewat tombol di bawah.
             </AppText>
           </View>
         </View>
 
         {/* SECTION: Darurat & Kepolisian */}
-        <AppText size="xs" className="text-text-muted font-display uppercase tracking-widest mb-2">Darurat &amp; Kepolisian</AppText>
+        <AppText size="sm" className="text-text-muted font-display uppercase tracking-widest mb-2">Darurat &amp; Kepolisian</AppText>
         {polisi.map(c => <ContactCard key={c.id} contact={c} onCall={handleCall} />)}
 
         {/* SECTION: Finansial */}
-        <AppText size="xs" className="text-text-muted font-display uppercase tracking-widest mb-2 mt-3">Pengaduan Keuangan</AppText>
+        <AppText size="sm" className="text-text-muted font-display uppercase tracking-widest mb-2 mt-3">Pengaduan Keuangan</AppText>
         {keuangan.map(c => <ContactCard key={c.id} contact={c} onCall={handleCall} />)}
 
         {/* SECTION: Siber */}
-        <AppText size="xs" className="text-text-muted font-display uppercase tracking-widest mb-2 mt-3">Keamanan Siber</AppText>
+        <AppText size="sm" className="text-text-muted font-display uppercase tracking-widest mb-2 mt-3">Keamanan Siber</AppText>
         {siber.map(c => <ContactCard key={c.id} contact={c} onCall={handleCall} />)}
       </ScrollView>
     </SafeAreaView>

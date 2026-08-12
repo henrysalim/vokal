@@ -125,7 +125,7 @@ export default function ProfilScreen() {
                     Mode Lansia
                   </AppText>
                 </View>
-                <AppText size="xs" className="font-body text-text-muted leading-tight">
+                <AppText size="sm" className="font-body text-text-muted leading-tight">
                   Teks lebih besar, panduan suara aktif, dan layout lebih
                   sederhana.
                 </AppText>

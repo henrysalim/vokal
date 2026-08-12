@@ -413,7 +413,7 @@ export default function KeluargaScreen() {
                   <X color="#3E2E22" size={16} />
                 </TouchableOpacity>
               </View>
-              <AppText size="xs" className="font-body text-text-muted mb-4">
+              <AppText size="sm" className="font-body text-justify text-text-muted mb-4">
                 Masukkan kalimat unik rahasia keluargamu. Pastikan setiap HP keluarga memasukkan seed yang persis sama agar Codeword TOTP selalu sinkron.
               </AppText>
 

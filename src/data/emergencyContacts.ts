@@ -33,7 +33,7 @@ export const EMERGENCY_CONTACTS: EmergencyContact[] = [
     category: 'keuangan',
     icon: '🏦',
     color: 'bg-olive',
-    available: 'Senin–Jumat, 08.00–17.00 WIB',
+    available: 'Senin-Jumat, 08.00-17.00 WIB',
   },
   {
     id: 'kominfo_aduan',
@@ -44,14 +44,14 @@ export const EMERGENCY_CONTACTS: EmergencyContact[] = [
     category: 'siber',
     icon: '📡',
     color: 'bg-espresso',
-    available: 'Senin–Jumat, 08.00–16.00 WIB',
+    available: 'Senin-Jumat, 08.00-16.00 WIB',
   },
   {
     id: 'bpjt',
     name: 'Layanan Darurat Terpadu',
     shortName: 'Darurat 112',
     phone: '112',
-    description: 'Nomor tunggal darurat nasional — kebakaran, medis, kepolisian.',
+    description: 'Nomor tunggal darurat nasional: kebakaran, medis, kepolisian.',
     category: 'umum',
     icon: '🆘',
     color: 'bg-terracotta',
@@ -66,7 +66,7 @@ export const EMERGENCY_CONTACTS: EmergencyContact[] = [
     category: 'siber',
     icon: '🛡️',
     color: 'bg-olive',
-    available: 'Senin–Jumat, 08.00–17.00 WIB',
+    available: 'Senin-Jumat, 08.00-17.00 WIB',
   },
   {
     id: 'cekrekening',
@@ -77,6 +77,6 @@ export const EMERGENCY_CONTACTS: EmergencyContact[] = [
     category: 'keuangan',
     icon: '💳',
     color: 'bg-mustard',
-    available: 'Senin–Jumat, 08.00–17.00 WIB',
+    available: 'Senin-Jumat, 08.00-17.00 WIB',
   },
 ];

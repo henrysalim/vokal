@@ -137,22 +137,22 @@ export default function RadarModus() {
 
       {/* List Radar Lokal */}
       <View className="bg-cream p-3 rounded-xl">
-        <AppText size="xs" className="text-espresso font-heading mb-3">Terdeteksi di Sekitarmu ({localScams.length}):</AppText>
+        <AppText size="sm" className="text-espresso font-heading mb-3">Terdeteksi di Sekitarmu ({localScams.length}):</AppText>
 
         {localScams.length === 0 ? (
-          <AppText size="xs" className="text-text-muted font-body text-center italic py-2">
+          <AppText size="sm" className="text-text-muted font-body text-center italic py-2">
             Belum ada data di lokasimu. Jadilah yang pertama melaporkan untuk melindungi komunitas!
           </AppText>
         ) : (
           localScams.slice(0, 3).map((scam, idx) => (
             <View key={`${scam.id || 'scam'}_${idx}`} className="flex-row items-start gap-2 mb-3 border-b border-espresso/5 pb-2">
               <View className="w-8 h-8 rounded-full bg-warning/20 items-center justify-center">
-                <AppText size="xs">⚠️</AppText>
+                <AppText size="sm">⚠️</AppText>
               </View>
               <View className="flex-1">
-                <AppText size="xs" className="text-warning font-heading">{scam.phonePrefix}</AppText>
-                <AppText size="xs" className="text-espresso font-body">Modus: {scam.type}</AppText>
-                <AppText size="xs" className="text-text-muted font-body">📍 {scam.location}</AppText>
+                <AppText size="sm" className="text-warning font-heading">{scam.phonePrefix}</AppText>
+                <AppText size="sm" className="text-espresso font-body">Modus: {scam.type}</AppText>
+                <AppText size="sm" className="text-text-muted font-body">📍 {scam.location}</AppText>
               </View>
             </View>
           ))

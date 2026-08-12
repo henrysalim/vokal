@@ -150,7 +150,7 @@ export function ConfirmModalComponent({
                 {title}
               </AppText>
 
-              <AppText size="xs" className="font-body text-text-muted text-center mt-2 px-2 leading-relaxed">
+              <AppText size="sm" className="font-body text-text-muted text-center mt-2 px-2 leading-relaxed">
                 {message}
               </AppText>
             </View>
@@ -173,7 +173,7 @@ export function ConfirmModalComponent({
                   onPress={handleCancel}
                   className="w-full bg-surface py-3 rounded-2xl items-center border border-espresso/10"
                 >
-                  <AppText size="xs" className="font-heading text-espresso/70">
+                  <AppText size="sm" className="font-heading text-espresso/70">
                     {cancelText}
                   </AppText>
                 </TouchableOpacity>

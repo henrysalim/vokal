@@ -357,7 +357,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                   {action.title}
                 </AppText>
                 <AppText
-                  size="xs"
+                  size="sm"
                   className={`font-body opacity-80 ${action.textColor}`}
                 >
                   {action.desc}
@@ -414,8 +414,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               Skor Eksposur Suara
             </AppText>
             <AppText
-              size="xs"
-              className="text-espresso/70 font-body leading-tight"
+              size="sm"
+              className="text-espresso/70 text-justify font-body leading-tight"
             >
               Jejak suaramu di medsos terpantau sedikit. Sangat sulit untuk
               dikloning AI.

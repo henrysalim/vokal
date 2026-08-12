@@ -9,6 +9,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 WebBrowser.maybeCompleteAuthSession();
 
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_SECRET || '';
 const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
 const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -142,41 +143,68 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
         return null;
       }
 
-      const redirectUrl = isExpoGo ? EXPO_PROXY_REDIRECT_URI : AuthSession.makeRedirectUri({ scheme: 'vokal' });
+      const proxyRedirectUri = 'https://auth.expo.io/@henrysalim/vokal';
+      const returnUrl = isExpoGo ? AuthSession.makeRedirectUri() : AuthSession.makeRedirectUri({ scheme: 'vokal' });
 
-      const request = new AuthSession.AuthRequest({
-        clientId: GOOGLE_CLIENT_ID,
-        scopes: ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/gmail.readonly'],
-        redirectUri: redirectUrl,
-        responseType: AuthSession.ResponseType.Code,
-        usePKCE: true,
-      });
+      const request = await AuthSession.loadAsync(
+        {
+          clientId: GOOGLE_CLIENT_ID,
+          scopes: ['openid', 'email', 'profile', 'https://www.googleapis.com/auth/gmail.readonly'],
+          redirectUri: isExpoGo ? proxyRedirectUri : returnUrl,
+          responseType: AuthSession.ResponseType.Code,
+          usePKCE: true,
+        },
+        discovery
+      );
 
-      const result = await request.promptAsync(discovery);
+      const authUrl = await request.makeAuthUrlAsync(discovery);
 
-      if (result.type === 'success' && result.params?.code) {
-        const tokenResult = await AuthSession.exchangeCodeAsync(
-          {
-            clientId: GOOGLE_CLIENT_ID,
-            code: result.params.code,
-            redirectUri: redirectUrl,
-            extraParams: {
-              code_verifier: request.codeVerifier || '',
-            },
-          },
-          discovery
-        );
+      let result: WebBrowser.WebBrowserAuthSessionResult;
+      if (isExpoGo) {
+        const startUrl = `https://auth.expo.io/@henrysalim/vokal/start?authUrl=${encodeURIComponent(authUrl)}&returnUrl=${encodeURIComponent(returnUrl)}`;
+        result = await WebBrowser.openAuthSessionAsync(startUrl, returnUrl);
+      } else {
+        result = await WebBrowser.openAuthSessionAsync(authUrl, returnUrl);
+      }
 
-        if (tokenResult.accessToken) {
-          return await handleTokenReceived(tokenResult.accessToken);
-        } else {
-          Alert.alert('Gagal Otorisasi Google', 'Token akses Google tidak dapat ditemukan.');
+      if (result.type === 'success' && result.url) {
+        let code: string | null = null;
+        try {
+          const parsed = new URL(result.url);
+          code = parsed.searchParams.get('code');
+        } catch {
+          const match = result.url.match(/[?&]code=([^&]+)/);
+          if (match) code = decodeURIComponent(match[1]);
         }
-      } else if (result.type === 'error') {
-        const errorMsg = result.error?.message || 'Akses ditolak oleh Google.';
+
+        if (code) {
+          const tokenResult = await AuthSession.exchangeCodeAsync(
+            {
+              clientId: GOOGLE_CLIENT_ID,
+              clientSecret: GOOGLE_CLIENT_SECRET,
+              code,
+              redirectUri: isExpoGo ? proxyRedirectUri : returnUrl,
+              extraParams: {
+                code_verifier: request.codeVerifier || '',
+              },
+            },
+            discovery
+          );
+
+          if (tokenResult.accessToken) {
+            return await handleTokenReceived(tokenResult.accessToken);
+          } else {
+            Alert.alert('Gagal Otorisasi Google', 'Token akses Google tidak dapat ditemukan.');
+          }
+        } else {
+          Alert.alert('Gagal Otorisasi Google', 'Kode otorisasi tidak ditemukan.');
+        }
+      } else if (result.type === 'dismiss' || result.type === 'cancel') {
+        // User cancelled auth session
+      } else {
         Alert.alert(
-          'Gagal Otorisasi Google (403/Denied)',
-          `${errorMsg}\n\nPastikan:\n1. Email Anda sudah didaftarkan di "Test users" (OAuth Consent Screen).\n2. "Gmail API" sudah di-Enable di GCP Console.`
+          'Gagal Otorisasi Google',
+          'Proses otorisasi dibatalkan atau terjadi kesalahan.'
         );
       }
     } catch (err: any) {
