@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, ScrollView, TouchableOpacity, TextInput,
-  ActivityIndicator, Alert, Keyboard, Modal
+  ActivityIndicator, Keyboard, Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -11,6 +11,7 @@ import {
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { useGoogleAuth } from '../../context/GoogleAuthContext';
 import { AppText } from '../../components/ui/AppText';
+import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import { analyzeWithGemini, GeminiAnalysisResult, GeminiAnalysisFlag } from '../../utils/geminiAnalyzer';
 
 const GMAIL_FETCH_LIMIT = 15;
@@ -98,6 +99,7 @@ function EmailListItem({
 
 export default function CekEmailScreen() {
   const { connectGoogle, ensureFreshToken, googleAccessToken, isGoogleConnected } = useGoogleAuth();
+  const { showConfirm } = useConfirmModal();
 
   type Mode = 'choose' | 'manual' | 'gmail_list' | 'result';
   const [mode, setMode] = useState<Mode>('choose');
@@ -121,7 +123,14 @@ export default function CekEmailScreen() {
       if (!token) return;
       await fetchGmailEmails(token);
     } catch (err: any) {
-      Alert.alert('Gagal Hubungkan Gmail', err.message || 'Silakan coba lagi.');
+      showConfirm({
+        title: 'Gagal Hubungkan Gmail',
+        message: err.message || 'Silakan coba lagi.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'danger',
+      });
     } finally {
       setIsLoadingGmail(false);
     }
@@ -138,7 +147,14 @@ export default function CekEmailScreen() {
 
     const messages: Array<{ id: string }> = listJson.messages || [];
     if (messages.length === 0) {
-      Alert.alert('Inbox Kosong', 'Tidak ditemukan email di Inbox.');
+      showConfirm({
+        title: 'Inbox Kosong',
+        message: 'Tidak ditemukan email di Inbox.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'mustard',
+        iconType: 'info',
+      });
       return;
     }
 
@@ -172,7 +188,14 @@ export default function CekEmailScreen() {
 
   const handleAnalyzeSelected = async () => {
     if (selectedIds.size === 0) {
-      Alert.alert('Pilih Email', 'Pilih setidaknya 1 email untuk dianalisis.');
+      showConfirm({
+        title: 'Pilih Email',
+        message: 'Pilih setidaknya 1 email untuk dianalisis.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'mustard',
+        iconType: 'warning',
+      });
       return;
     }
     const selected = emails.filter(e => selectedIds.has(e.id));
@@ -185,7 +208,14 @@ export default function CekEmailScreen() {
       setResult(analysis);
       setMode('result');
     } catch (err: any) {
-      Alert.alert('Analisis Gagal', err.message || 'Coba lagi atau gunakan metode manual.');
+      showConfirm({
+        title: 'Analisis Gagal',
+        message: err.message || 'Coba lagi atau gunakan metode manual.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'danger',
+      });
     } finally {
       setIsAnalyzing(false);
     }
@@ -193,7 +223,14 @@ export default function CekEmailScreen() {
 
   const handleAnalyzeManual = async () => {
     if (manualText.trim().length < 20) {
-      Alert.alert('Teks Terlalu Pendek', 'Tempel minimal 20 karakter teks email/pesan.');
+      showConfirm({
+        title: 'Teks Terlalu Pendek',
+        message: 'Tempel minimal 20 karakter teks email/pesan yang ingin dianalisis.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'mustard',
+        iconType: 'warning',
+      });
       return;
     }
     Keyboard.dismiss();
@@ -203,7 +240,14 @@ export default function CekEmailScreen() {
       setResult(analysis);
       setMode('result');
     } catch (err: any) {
-      Alert.alert('Analisis Gagal', err.message || 'Coba lagi.');
+      showConfirm({
+        title: 'Analisis Gagal',
+        message: err.message || 'Coba lagi.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'danger',
+      });
     } finally {
       setIsAnalyzing(false);
     }

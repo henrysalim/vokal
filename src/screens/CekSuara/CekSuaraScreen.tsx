@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, ScrollView, Alert, Linking } from 'react-native';
+import { View, TouchableOpacity, ScrollView, Modal, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Mic, ShieldAlert, ShieldCheck, Activity, Phone,
@@ -15,6 +15,7 @@ import { Audio } from 'expo-av';
 import { analyzeLocalDSP, DspAnalysisResult } from '../../utils/audioAnalyzer';
 import { analyzeWithGemini, GeminiAnalysisResult } from '../../utils/geminiAnalyzer';
 import { AppText } from '../../components/ui/AppText';
+import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import { EMERGENCY_CONTACTS } from '../../data/emergencyContacts';
 
 type ScanState = 'idle' | 'recording' | 'analyzing_local' | 'analyzing_gemini' | 'result';
@@ -61,6 +62,7 @@ function FeatureBar({
 // ─── Main Screen ──────────────────────────────────────────────────
 
 export default function CekSuaraScreen() {
+  const { showConfirm } = useConfirmModal();
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [showPanicMode, setShowPanicMode] = useState(false);
   const [countdown, setCountdown] = useState(60);
@@ -113,7 +115,14 @@ export default function CekSuaraScreen() {
     try {
       const perm = await Audio.requestPermissionsAsync();
       if (perm.status !== 'granted') {
-        Alert.alert('Izin Ditolak', 'Izin mikrofon dibutuhkan untuk memindai suara.');
+        showConfirm({
+          title: 'Izin Ditolak',
+          message: 'Izin mikrofon dibutuhkan untuk memindai suara.',
+          confirmText: 'Mengerti',
+          cancelText: '',
+          variant: 'terracotta',
+          iconType: 'warning',
+        });
         return;
       }
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
@@ -165,7 +174,14 @@ export default function CekSuaraScreen() {
 
     } catch (err) {
       console.error('Recording error', err);
-      Alert.alert('Error', 'Gagal mengakses mikrofon.');
+      showConfirm({
+        title: 'Error',
+        message: 'Gagal mengakses mikrofon.',
+        confirmText: 'Tutup',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'danger',
+      });
       setScanState('idle');
     }
   };

@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Phone, Shield, AlertTriangle } from 'lucide-react-native';
 import { AppText } from '../../components/ui/AppText';
+import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import { EMERGENCY_CONTACTS, EmergencyContact } from '../../data/emergencyContacts';
 
 function ContactCard({ contact, onCall }: { contact: EmergencyContact; onCall: (phone: string, name: string) => void }) {
@@ -37,21 +38,31 @@ function ContactCard({ contact, onCall }: { contact: EmergencyContact; onCall: (
 }
 
 export default function KontakDaruratScreen() {
+  const { showConfirm } = useConfirmModal();
+
   const handleCall = async (phone: string, name: string) => {
     const url = `tel:${phone}`;
     const canOpen = await Linking.canOpenURL(url);
     if (!canOpen) {
-      Alert.alert('Tidak Bisa Menelepon', `Perangkat ini tidak mendukung panggilan telepon. Hubungi ${name} di nomor ${phone} secara manual.`);
+      showConfirm({
+        title: 'Perangkat Tidak Mendukung',
+        message: `Perangkat ini tidak mendukung panggilan telepon. Silakan hubungi ${name} di nomor ${phone} secara manual.`,
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
       return;
     }
-    Alert.alert(
-      `Hubungi ${name}?`,
-      `Kamu akan diarahkan untuk menelepon ${phone}`,
-      [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Telepon Sekarang', onPress: () => Linking.openURL(url) },
-      ]
-    );
+    showConfirm({
+      title: `Hubungi ${name}?`,
+      message: `Anda akan melakukan panggilan telepon ke nomor ${phone}. Pastikan ini adalah tindakan yang aman.`,
+      confirmText: 'Hubungi',
+      cancelText: 'Batal',
+      variant: 'terracotta',
+      iconType: 'question',
+      onConfirm: () => Linking.openURL(url),
+    });
   };
 
   const polisi = EMERGENCY_CONTACTS.filter(c => c.category === 'kepolisian' || c.category === 'umum');

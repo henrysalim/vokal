@@ -278,7 +278,14 @@ export default function KeluargaScreen() {
   const handlePickSelected = () => {
     const selected = deviceContacts.filter(c => selectedContactIds.includes(c.id || c.name || ''));
     if (selected.length === 0) {
-      Alert.alert("Peringatan", "Pilih setidaknya 1 kontak untuk diundang.");
+      showConfirm({
+        title: "Pilih Kontak",
+        message: "Pilih setidaknya 1 kontak untuk diundang ke jaringan keluarga.",
+        confirmText: "Mengerti",
+        cancelText: "",
+        variant: "mustard",
+        iconType: "warning",
+      });
       return;
     }
     addContactsToFamily(selected);

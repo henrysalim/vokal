@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Modal, TextInput, Alert, ScrollView } from 'react-native';
+import { View, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
 import { Radar, AlertTriangle, ShieldCheck, Search, PlusCircle, X, Share2 } from 'lucide-react-native';
 import { useScamContext, ScamReport, CheckResult } from '../../context/ScamContext';
+import { useConfirmModal } from './ConfirmModal';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { AppText } from './AppText';
 
 export default function RadarModus() {
   const { localScams, reportScam, checkNumberDetails } = useScamContext();
+  const { showConfirm } = useConfirmModal();
   const [modalVisible, setModalVisible] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
   const [locationInput, setLocationInput] = useState('');
@@ -22,11 +24,25 @@ export default function RadarModus() {
 
   const handleReport = async () => {
     if (phoneInput.length < 8) {
-      Alert.alert('Gagal', 'Nomor telepon tidak valid.');
+      showConfirm({
+        title: 'Nomor Tidak Valid',
+        message: 'Masukkan minimal 8 digit nomor telepon.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
       return;
     }
     if (locationInput.length < 3) {
-      Alert.alert('Gagal', 'Lokasi (Kecamatan/Kota) wajib diisi.');
+      showConfirm({
+        title: 'Lokasi Wajib Diisi',
+        message: 'Masukkan lokasi (Kecamatan/Kota) untuk laporan ini.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
       return;
     }
 

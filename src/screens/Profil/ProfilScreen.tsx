@@ -10,7 +10,7 @@ import {
   User,
 } from "lucide-react-native";
 import React, { useState } from "react";
-import { Alert, Image, ScrollView, Switch, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, Switch, TouchableOpacity, View } from "react-native";
 import Animated, {
   Easing,
   FadeInDown,
@@ -155,12 +155,26 @@ export default function ProfilScreen() {
               {
                 icon: <Bell color="#3E2E22" size={20} />,
                 title: "Notifikasi",
-                onPress: () => Alert.alert('Segera Hadir', 'Fitur notifikasi akan tersedia di pembaruan berikutnya.'),
+                onPress: () => showConfirm({
+                  title: 'Segera Hadir',
+                  message: 'Fitur notifikasi akan tersedia di pembaruan berikutnya.',
+                  confirmText: 'Mengerti',
+                  cancelText: '',
+                  variant: 'mustard',
+                  iconType: 'info',
+                }),
               },
               {
                 icon: <Settings color="#3E2E22" size={20} />,
                 title: "Pengaturan Suara",
-                onPress: () => Alert.alert('Segera Hadir', 'Pengaturan suara akan tersedia di pembaruan berikutnya.'),
+                onPress: () => showConfirm({
+                  title: 'Segera Hadir',
+                  message: 'Pengaturan suara akan tersedia di pembaruan berikutnya.',
+                  confirmText: 'Mengerti',
+                  cancelText: '',
+                  variant: 'mustard',
+                  iconType: 'info',
+                }),
               },
             ].map((item, index) => (
               <TouchableOpacity
@@ -186,7 +200,14 @@ export default function ProfilScreen() {
         {/* ABOUT & LOGOUT */}
         <View className="gap-2 mb-6">
           <TouchableOpacity
-            onPress={() => Alert.alert('VOKAL', 'Verifikasi Otomatis Kloning Audio Lokal\nVersi 1.0.0\n\nDibuat untuk melindungi keluarga Indonesia dari ancaman penipuan digital berbasis AI.')}
+            onPress={() => showConfirm({
+              title: 'VOKAL v1.0.0',
+              message: 'Verifikasi Otomatis Kloning Audio Lokal\n\nDibuat untuk melindungi keluarga Indonesia dari ancaman penipuan digital berbasis AI.',
+              confirmText: 'Tutup',
+              cancelText: '',
+              variant: 'olive',
+              iconType: 'info',
+            })}
             activeOpacity={0.8}
             className="bg-[#FFFFFF] rounded-2xl p-4 flex-row items-center gap-3 border border-espresso/5">
             <CircleHelp color="#74822F" size={20} />

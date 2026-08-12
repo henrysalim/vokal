@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, ScrollView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Mic, Mail, MessageSquare, Phone, Search, ChevronRight } from 'lucide-react-native';
 import { AppText } from '../../components/ui/AppText';
+import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import { EMERGENCY_CONTACTS } from '../../data/emergencyContacts';
-import { Linking, Alert } from 'react-native';
 
 type AnalisisHubScreenProps = {
   navigation: any;
@@ -22,6 +22,8 @@ type ToolCard = {
 };
 
 export default function AnalisisHubScreen({ navigation }: AnalisisHubScreenProps) {
+  const { showConfirm } = useConfirmModal();
+
   const tools: ToolCard[] = [
     {
       id: 'cek_suara',
@@ -61,14 +63,15 @@ export default function AnalisisHubScreen({ navigation }: AnalisisHubScreenProps
 
   const handleCallEmergency = async (phone: string, name: string) => {
     const url = `tel:${phone}`;
-    Alert.alert(
-      `Hubungi ${name}?`,
-      `Kamu akan diarahkan untuk menelepon ${phone}`,
-      [
-        { text: 'Batal', style: 'cancel' },
-        { text: 'Telepon', onPress: () => Linking.openURL(url) },
-      ]
-    );
+    showConfirm({
+      title: `Hubungi ${name}?`,
+      message: `Anda akan melakukan panggilan telepon ke nomor ${phone}. Pastikan ini adalah tindakan yang aman.`,
+      confirmText: 'Hubungi',
+      cancelText: 'Batal',
+      variant: 'terracotta',
+      iconType: 'question',
+      onConfirm: () => Linking.openURL(url),
+    });
   };
 
   const topContacts = EMERGENCY_CONTACTS.slice(0, 3);

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
   View, ScrollView, TouchableOpacity, TextInput,
-  ActivityIndicator, Alert, Keyboard
+  ActivityIndicator, Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MessageSquare, X, ShieldCheck, RotateCcw, Sparkles, ChevronRight } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '../../components/ui/AppText';
+import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import { analyzeWithGemini, GeminiAnalysisResult, GeminiAnalysisFlag } from '../../utils/geminiAnalyzer';
 
 // ─── Sub-Components ───────────────────────────────────────────────
@@ -66,13 +67,21 @@ const SAMPLES = [
 // ─── Main Screen ──────────────────────────────────────────────────
 
 export default function CekPesanScreen() {
+  const { showConfirm } = useConfirmModal();
   const [inputText, setInputText] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<GeminiAnalysisResult | null>(null);
 
   const handleAnalyze = async () => {
     if (inputText.trim().length < 15) {
-      Alert.alert('Teks Terlalu Pendek', 'Masukkan minimal 15 karakter teks pesan yang ingin dicek.');
+      showConfirm({
+        title: 'Teks Terlalu Pendek',
+        message: 'Masukkan minimal 15 karakter teks pesan yang ingin dicek.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'mustard',
+        iconType: 'warning',
+      });
       return;
     }
     Keyboard.dismiss();
@@ -85,7 +94,14 @@ export default function CekPesanScreen() {
       });
       setResult(analysis);
     } catch (err: any) {
-      Alert.alert('Analisis Gagal', err.message || 'Periksa koneksi internet dan coba lagi.');
+      showConfirm({
+        title: 'Analisis Gagal',
+        message: err.message || 'Periksa koneksi internet dan coba lagi.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'danger',
+      });
     } finally {
       setIsAnalyzing(false);
     }
