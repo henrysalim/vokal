@@ -75,18 +75,18 @@ function EmailListItem({
       <View className="flex-row items-start gap-3">
         <View className="mt-0.5">
           {selected
-            ? <CheckSquare color="#C1592E" size={20} fill="#C1592E" />
-            : <Square color="#9E8E7E" size={20} />
+            ? <CheckSquare color="#C1592E" size={22} fill="#C1592E" />
+            : <Square color="#9E8E7E" size={22} />
           }
         </View>
         <View className="flex-1">
-          <AppText size="xs" className="text-text-muted font-body mb-0.5" numberOfLines={1}>
+          <AppText size="sm" className="text-text-muted font-body mb-0.5" numberOfLines={1}>
             {email.from}
           </AppText>
-          <AppText size="sm" className="text-espresso font-heading leading-tight" numberOfLines={2}>
+          <AppText size="base" className="text-espresso font-heading leading-tight" numberOfLines={2}>
             {email.subject}
           </AppText>
-          <AppText size="xs" className="text-text-muted font-body mt-1 leading-relaxed" numberOfLines={2}>
+          <AppText size="sm" className="text-text-muted font-body mt-1 leading-relaxed" numberOfLines={2}>
             {email.snippet}
           </AppText>
         </View>
@@ -110,7 +110,7 @@ export default function CekEmailScreen() {
 
   // Gmail email list state
   const [emails, setEmails] = useState<EmailItem[]>([]);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [analyzedEmails, setAnalyzedEmails] = useState<{ subject: string; from: string; snippet: string }[]>([]);
 
   // ── Gmail Fetch ──────────────────────────────────────────────────
@@ -173,7 +173,11 @@ export default function CekEmailScreen() {
     }
 
     setEmails(fetched);
-    setSelectedIds(new Set(fetched.map(e => e.id))); // Default semua terpilih
+    const initialSelected: Record<string, boolean> = {};
+    fetched.forEach(e => {
+      initialSelected[e.id] = true;
+    });
+    setSelectedIds(initialSelected);
     setMode('gmail_list');
   };
 
@@ -187,7 +191,8 @@ export default function CekEmailScreen() {
   };
 
   const handleAnalyzeSelected = async () => {
-    if (selectedIds.size === 0) {
+    const selectedCount = Object.values(selectedIds).filter(Boolean).length;
+    if (selectedCount === 0) {
       showConfirm({
         title: 'Pilih Email',
         message: 'Pilih setidaknya 1 email untuk dianalisis.',
@@ -198,7 +203,7 @@ export default function CekEmailScreen() {
       });
       return;
     }
-    const selected = emails.filter(e => selectedIds.has(e.id));
+    const selected = emails.filter(e => selectedIds[e.id]);
     const combined = selected.map(e => `Dari: ${e.from}\nJudul: ${e.subject}\n${e.snippet}`).join('\n\n---\n\n');
 
     setIsAnalyzing(true);
@@ -257,23 +262,28 @@ export default function CekEmailScreen() {
     setResult(null);
     setManualText('');
     setEmails([]);
-    setSelectedIds(new Set());
+    setSelectedIds({});
     setAnalyzedEmails([]);
     setMode('choose');
   };
 
   const toggleSelect = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
+    setSelectedIds(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
   };
 
   const toggleSelectAll = () => {
-    setSelectedIds(prev =>
-      prev.size === emails.length ? new Set() : new Set(emails.map(e => e.id))
-    );
+    setSelectedIds(prev => {
+      const selectedCount = Object.values(prev).filter(Boolean).length;
+      const allSelected = selectedCount === emails.length;
+      const next: Record<string, boolean> = {};
+      emails.forEach(e => {
+        next[e.id] = !allSelected;
+      });
+      return next;
+    });
   };
 
   // ── Loading State ────────────────────────────────────────────────
@@ -306,6 +316,9 @@ export default function CekEmailScreen() {
 
   // ── Gmail Email List (Pilih Email) ───────────────────────────────
   if (mode === 'gmail_list') {
+    const selectedCount = Object.values(selectedIds).filter(Boolean).length;
+    const allSelected = selectedCount === emails.length;
+
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-cream">
         {/* Header */}
@@ -325,17 +338,17 @@ export default function CekEmailScreen() {
             </View>
             <TouchableOpacity onPress={toggleSelectAll} className="bg-espresso/8 px-3 py-1.5 rounded-full">
               <AppText size="xs" className="text-espresso font-heading">
-                {selectedIds.size === emails.length ? 'Batal Semua' : 'Pilih Semua'}
+                {allSelected ? 'Batal Semua' : 'Pilih Semua'}
               </AppText>
             </TouchableOpacity>
           </View>
 
           {/* Selected count bar */}
-          {selectedIds.size > 0 && (
+          {selectedCount > 0 && (
             <View className="bg-terracotta/10 rounded-xl px-3 py-2 flex-row items-center gap-2 border border-terracotta/20">
               <CheckSquare color="#C1592E" size={16} />
               <AppText size="xs" className="text-terracotta font-heading">
-                {selectedIds.size} email dipilih untuk dianalisis
+                {selectedCount} email dipilih untuk dianalisis
               </AppText>
             </View>
           )}
@@ -346,25 +359,25 @@ export default function CekEmailScreen() {
             <EmailListItem
               key={email.id}
               email={email}
-              selected={selectedIds.has(email.id)}
+              selected={!!selectedIds[email.id]}
               onToggle={() => toggleSelect(email.id)}
             />
           ))}
         </ScrollView>
 
-        {/* Analyze button fixed at bottom */}
-        <View className="px-5 pb-8 pt-3 bg-cream border-t border-espresso/8">
+        {/* Analyze button fixed at bottom (pushed up to clear the absolute tab bar) */}
+        <View className="px-5 pb-8 pt-3 bg-cream border-t border-espresso/8 mb-[95px]">
           <TouchableOpacity
             onPress={handleAnalyzeSelected}
-            activeOpacity={selectedIds.size === 0 ? 1 : 0.85}
+            activeOpacity={selectedCount === 0 ? 1 : 0.85}
             className="rounded-2xl py-4 items-center flex-row justify-center gap-2"
-            style={{ backgroundColor: selectedIds.size === 0 ? '#9E8E7E' : '#C1592E' }}
+            style={{ backgroundColor: selectedCount === 0 ? '#9E8E7E' : '#C1592E' }}
           >
             <Sparkles color="#FFFFFF" size={18} />
             <AppText size="base" className="text-white font-heading">
-              {selectedIds.size === 0
+              {selectedCount === 0
                 ? 'Pilih Email Dulu'
-                : `Analisis ${selectedIds.size} Email dengan Gemini`}
+                : `Analisis ${selectedCount} Email dengan Gemini`}
             </AppText>
           </TouchableOpacity>
         </View>

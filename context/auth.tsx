@@ -244,16 +244,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (result.type === 'success' && result.url) {
             let accessToken = null;
             let refreshToken = null;
+            let providerToken = null;
 
             if (result.url.includes('#')) {
               const hash = result.url.split('#')[1];
               const params = new URLSearchParams(hash);
               accessToken = params.get('access_token');
               refreshToken = params.get('refresh_token');
+              providerToken = params.get('provider_token');
             } else {
               const params = new URL(result.url).searchParams;
               accessToken = params.get('access_token');
               refreshToken = params.get('refresh_token');
+              providerToken = params.get('provider_token');
             }
 
             if (accessToken && refreshToken) {
@@ -268,13 +271,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setIsOnboarded(true);
 
                 // Simpan provider_token (Google access token) ke profiles untuk Gmail API
-                const providerToken = sessionData?.session?.provider_token;
-                if (providerToken && sessionData?.session?.user?.id) {
+                const finalProviderToken = providerToken || sessionData?.session?.provider_token;
+                if (finalProviderToken && sessionData?.session?.user?.id) {
                   const oneMonthLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
                   await supabase
                     .from('profiles')
                     .update({
-                      gmail_access_token: providerToken,
+                      gmail_access_token: finalProviderToken,
                       gmail_token_obtained_at: new Date().toISOString(),
                       gmail_connected_until: oneMonthLater.toISOString(),
                     })
@@ -462,16 +465,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [signInWithGoogle]);
 
   const signOut = useCallback(async () => {
+    console.log("signOut callback triggered in AuthContext");
     try {
       if (isSupabaseConfigured()) {
+        console.log("Supabase is configured, calling supabase.auth.signOut()...");
         const {error} = await supabase.auth.signOut();
         if (error) {
-          console.error("Gagal signOUt dari Supabase: ", error.message)
+          console.error("Gagal signOut dari Supabase: ", error.message);
+        } else {
+          console.log("Supabase auth.signOut() completed successfully");
         }
+      } else {
+        console.log("Supabase not configured, signing out of dummy session");
       }
     } catch (err) {
       console.error("Error saat logout: ", err);
     } finally {
+      console.log("Setting user state to null in AuthContext");
       setUser(null);
     }
   }, []);

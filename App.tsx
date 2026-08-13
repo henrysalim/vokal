@@ -196,15 +196,21 @@ function MainNavigator() {
     );
   }
 
-  const initialRouteName = !isOnboarded ? "Onboarding" : !user ? "Login" : "Root";
-
   return (
-    <Stack.Navigator initialRouteName={initialRouteName} screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Root" component={TabNavigator} />
-      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen name="EditProfil" component={EditProfilScreen} />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!isOnboarded ? (
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      ) : !user ? (
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="Root" component={TabNavigator} />
+          <Stack.Screen name="EditProfil" component={EditProfilScreen} />
+        </>
+      )}
     </Stack.Navigator>
   );
 }
@@ -218,13 +224,29 @@ export default function App() {
     "DMSans-Bold": DMSans_700Bold,
   });
 
+  const [appIsReady, setAppIsReady] = React.useState(false);
+
+  React.useEffect(() => {
+    async function prepare() {
+      try {
+        // Berikan delay 2 detik agar logo/splash screen terlihat oleh juri
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setAppIsReady(true);
+      }
+    }
+    prepare();
+  }, []);
+
   const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded || fontError) {
+    if ((fontsLoaded || fontError) && appIsReady) {
       await SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, appIsReady]);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !appIsReady) {
     return null;
   }
 

@@ -69,9 +69,6 @@ export default function OnboardingScreen() {
 
   const handleFinish = () => {
     completeOnboarding();
-    if (navigation && navigation.navigate) {
-      navigation.navigate('Login');
-    }
   };
 
   const isLast = activeIndex === SLIDES.length - 1;
