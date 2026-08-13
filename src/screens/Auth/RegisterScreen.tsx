@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, ChevronLeft, Users, ChevronDown } from 'lucide-react-native';
+import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, Users, ChevronDown } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../../context/auth';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
@@ -23,12 +23,11 @@ export default function RegisterScreen() {
 
   const getPasswordStrength = () => {
     if (!password) return 0;
-    let score = 0;
-    if (password.length >= 8) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++;
-    return score;
+    let strength = 0;
+    if (password.length >= 6) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    return strength;
   };
 
   const strength = getPasswordStrength();
@@ -38,35 +37,25 @@ export default function RegisterScreen() {
   const { showConfirm } = useConfirmModal();
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      showConfirm({
-        title: 'Formulir Belum Lengkap',
-        message: 'Semua kolom wajib diisi.',
-        confirmText: 'Mengerti',
-        cancelText: '',
-        variant: 'mustard',
-        iconType: 'warning',
-      });
+    if (!name || !email || !password) {
+      Alert.alert('Error', 'Semua kolom wajib diisi.');
       return;
     }
     if (password !== confirmPassword) {
-      showConfirm({
-        title: 'Kata Sandi Tidak Cocok',
-        message: 'Pastikan Konfirmasi Kata Sandi sama dengan Kata Sandi Anda.',
-        confirmText: 'Coba Lagi',
-        cancelText: '',
-        variant: 'terracotta',
-        iconType: 'danger',
-      });
+      Alert.alert('Error', 'Konfirmasi kata sandi tidak cocok.');
       return;
     }
-    if (password.length < 8) {
+    if (password.length < 6) {
+      Alert.alert('Kata Sandi Terlalu Lemah', 'Kata sandi minimal harus 6 karakter.');
+      return;
+    }
+    if (showFamilyField && familyCode && familyCode.length !== 8) {
       showConfirm({
-        title: 'Kata Sandi Terlalu Pendek',
-        message: 'Kata sandi minimal harus terdiri dari 8 karakter.',
+        title: 'Kode Keluarga Tidak Valid',
+        message: 'Kode keluarga harus terdiri dari 8 karakter alfanumerik.',
         confirmText: 'Mengerti',
-        cancelText: '',
-        variant: 'mustard',
+        cancelText: 'Batal',
+        variant: 'terracotta',
         iconType: 'warning',
       });
       return;
@@ -77,15 +66,6 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
       <ScrollView className="flex-1 px-5 pt-2" contentContainerStyle={{ paddingBottom: 50 }} showsVerticalScrollIndicator={false}>
-
-        {/* BACK BUTTON */}
-        <TouchableOpacity
-          onPress={() => navigation?.goBack()}
-          activeOpacity={0.7}
-          className="w-10 h-10 rounded-full bg-espresso/5 border border-espresso/10 items-center justify-center mb-2"
-        >
-          <ChevronLeft color="#3E2E22" size={24} />
-        </TouchableOpacity>
 
         {/* HEADER AREA */}
         <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center mb-6">
@@ -98,6 +78,14 @@ export default function RegisterScreen() {
 
         {/* FORM CARD */}
         <Animated.View entering={FadeInDown.delay(200).springify()} className="bg-surface rounded-[28px] p-6 shadow-sm border border-espresso/5">
+
+          {/* INFO BOX UNTUK JURI */}
+          <View className="bg-terracotta/10 border border-terracotta/30 rounded-2xl p-4 mb-4">
+            <AppText size="sm" className="text-terracotta font-heading mb-1">Informasi Penting Penjurian</AppText>
+            <AppText size="xs" className="text-espresso font-body leading-relaxed">
+              Karena aplikasi VOKAL saat ini masih dalam tahap pengembangan, proses pendaftaran atau masuk dengan Google akan menampilkan peringatan keamanan dari Google (layar tidak aman). Anda perlu menekan tombol Advanced (Lanjutan) lalu mengeklik tautan ke vokal (unsafe) untuk melanjutkan ke dalam aplikasi.
+            </AppText>
+          </View>
 
           {/* GOOGLE SIGN-UP BUTTON */}
           <TouchableOpacity

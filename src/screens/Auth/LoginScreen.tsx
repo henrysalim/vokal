@@ -39,6 +39,14 @@ export default function LoginScreen() {
         {/* FORM CARD */}
         <Animated.View entering={FadeInDown.delay(200).springify()} className="bg-surface rounded-[28px] p-6 shadow-sm border border-espresso/5">
 
+          {/* INFO BOX UNTUK JURI */}
+          <View className="bg-terracotta/10 border border-terracotta/30 rounded-2xl p-4 mb-4">
+            <AppText size="sm" className="text-terracotta font-heading mb-1">Informasi Penting Penjurian</AppText>
+            <AppText size="xs" className="text-espresso font-body leading-relaxed">
+              Karena aplikasi VOKAL saat ini masih dalam tahap pengembangan, proses pendaftaran atau masuk dengan Google akan menampilkan peringatan keamanan dari Google (layar tidak aman). Anda perlu menekan tombol Advanced (Lanjutan) lalu mengeklik tautan ke vokal (unsafe) untuk melanjutkan ke dalam aplikasi.
+            </AppText>
+          </View>
+
           {/* GOOGLE SIGN-IN BUTTON */}
           <TouchableOpacity
             activeOpacity={0.8}
