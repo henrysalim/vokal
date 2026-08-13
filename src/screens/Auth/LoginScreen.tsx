@@ -41,8 +41,8 @@ export default function LoginScreen() {
 
           {/* INFO BOX UNTUK JURI */}
           <View className="bg-terracotta/10 border border-terracotta/30 rounded-2xl p-4 mb-4">
-            <AppText size="sm" className="text-terracotta font-heading mb-1">Informasi Penting Penjurian</AppText>
-            <AppText size="xs" className="text-espresso font-body leading-relaxed">
+            <AppText size="md" className="text-terracotta font-heading mb-1">Informasi Penting Penjurian</AppText>
+            <AppText size="sm" className="text-espresso font-body leading-relaxed">
               Karena aplikasi VOKAL saat ini masih dalam tahap pengembangan, proses pendaftaran atau masuk dengan Google akan menampilkan peringatan keamanan dari Google (layar tidak aman). Anda perlu menekan tombol Advanced (Lanjutan) lalu mengeklik tautan ke vokal (unsafe) untuk melanjutkan ke dalam aplikasi.
             </AppText>
           </View>
@@ -134,15 +134,6 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
         </Animated.View>
-
-        {/* SECURITY NOTICE PILL */}
-        <Animated.View entering={FadeInDown.delay(300).springify()} className="bg-mustard/15 border border-mustard/30 rounded-2xl p-4 flex-row items-center gap-3 mt-4">
-          <ShieldCheck color="#74822F" size={22} />
-          <AppText size="xs" className="text-text-muted font-body leading-relaxed flex-1">
-            Suara Anda tidak pernah dikirim ke server manapun. Semua proses verifikasi berjalan 100% lokal di HP Anda.
-          </AppText>
-        </Animated.View>
-
       </ScrollView>
     </SafeAreaView>
   );

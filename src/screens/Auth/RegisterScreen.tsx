@@ -81,8 +81,8 @@ export default function RegisterScreen() {
 
           {/* INFO BOX UNTUK JURI */}
           <View className="bg-terracotta/10 border border-terracotta/30 rounded-2xl p-4 mb-4">
-            <AppText size="sm" className="text-terracotta font-heading mb-1">Informasi Penting Penjurian</AppText>
-            <AppText size="xs" className="text-espresso font-body leading-relaxed">
+            <AppText size="md" className="text-terracotta font-heading mb-1">Informasi Penting Penjurian</AppText>
+            <AppText size="sm" className="text-espresso font-body leading-relaxed">
               Karena aplikasi VOKAL saat ini masih dalam tahap pengembangan, proses pendaftaran atau masuk dengan Google akan menampilkan peringatan keamanan dari Google (layar tidak aman). Anda perlu menekan tombol Advanced (Lanjutan) lalu mengeklik tautan ke vokal (unsafe) untuk melanjutkan ke dalam aplikasi.
             </AppText>
           </View>
@@ -200,13 +200,13 @@ export default function RegisterScreen() {
             activeOpacity={0.7}
           >
             <Users color="#74822F" size={16} />
-            <AppText size="xs" className="font-heading text-olive flex-1">Bergabung ke Keluarga (Opsional)</AppText>
+            <AppText size="sm" className="font-heading text-olive flex-1">Bergabung ke Keluarga (Opsional)</AppText>
             <ChevronDown color="#74822F" size={16} style={{ transform: [{ rotate: showFamilyField ? '180deg' : '0deg' }] }} />
           </TouchableOpacity>
 
           {showFamilyField && (
             <View className="bg-olive/8 border border-olive/20 rounded-2xl p-3.5 mb-4">
-              <AppText size="xs" className="font-body text-text-muted leading-relaxed mb-3">
+              <AppText size="sm" className="font-body text-text-muted leading-relaxed mb-3">
                 Masukkan kode keluarga jika ada anggota keluarga yang sudah punya akun VOKAL. Kosongkan jika mendaftar sendiri.
               </AppText>
               <View className="flex-row items-center bg-cream border border-olive/20 rounded-2xl px-4 py-3.5">
@@ -227,7 +227,7 @@ export default function RegisterScreen() {
           {/* PRIVACY CARD */}
           <View className="bg-olive/10 border border-olive/20 rounded-2xl p-3.5 flex-row items-start gap-2.5 mb-6">
             <ShieldCheck color="#74822F" size={20} className="mt-0.5" />
-            <AppText size="xs" className="font-body text-text-muted leading-relaxed flex-1">
+            <AppText size="sm" className="font-body text-text-muted leading-relaxed flex-1">
               Dengan mendaftar, Anda menyetujui bahwa data suara tidak pernah dikirim ke server luar. Semua verifikasi berjalan 100% lokal di HP Anda.
             </AppText>
           </View>
