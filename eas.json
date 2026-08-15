@@ -1,0 +1,27 @@
+{
+  "build": {
+    "preview": {
+      "node": "22.14.0",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "preview2": {
+      "node": "22.14.0",
+      "android": {
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
+    "preview3": {
+      "node": "22.14.0",
+      "developmentClient": true
+    },
+    "preview4": {
+      "node": "22.14.0",
+      "distribution": "internal"
+    },
+    "production": {
+      "node": "22.14.0"
+    }
+  }
+}
