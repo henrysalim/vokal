@@ -89,6 +89,13 @@ export default function RadarModus() {
     if (checkInput.length < 8) return;
     const res = await checkNumberDetails(checkInput);
     setCheckDetails(res);
+    const status = res.isScam ? "bahaya" : "aman";
+    const detailText = res.isScam 
+      ? `Terdaftar di database laporan penipuan (${res.totalReports} laporan).` 
+      : "Nomor bersih dari database laporan crowdsourced.";
+    import("../../utils/analysisHistory").then(({ addAnalysisLog }) => {
+      addAnalysisLog("nomor", `Cek Nomor: ${checkInput}`, detailText, status);
+    });
   };
 
   return (

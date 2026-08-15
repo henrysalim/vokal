@@ -451,7 +451,7 @@ function SimSession({
               {selOpt.isCorrect ? <CheckCircle2 color="#74822F" size={20} /> : <AlertCircle color="#C1592E" size={20} />}
               <View className="flex-1">
                 <AppText size="sm" className={`font-heading mb-1 ${selOpt.isCorrect ? 'text-olive' : 'text-terracotta'}`}>
-                  {selOpt.isCorrect ? `+${selOpt.xpDelta} XP — Respons Tepat!` : selOpt.xpDelta < 0 ? '-1 Nyawa' : 'Kurang Optimal'}
+                  {selOpt.isCorrect ? `+${selOpt.xpDelta} XP: Respons Tepat!` : selOpt.xpDelta < 0 ? '-1 Nyawa' : 'Kurang Optimal'}
                 </AppText>
                 <AppText size="xs" className="text-espresso/70 font-body leading-relaxed">{selOpt.feedback}</AppText>
               </View>

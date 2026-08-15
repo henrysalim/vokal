@@ -1,10 +1,11 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
   View, ScrollView, TouchableOpacity, TextInput,
   ActivityIndicator, Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MessageSquare, X, ShieldCheck, RotateCcw, Sparkles, ChevronRight } from 'lucide-react-native';
+import { MessageSquare, X, ShieldCheck, RotateCcw, Sparkles, ChevronRight, ChevronLeft } from 'lucide-react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { AppText } from '../../components/ui/AppText';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
@@ -67,6 +68,7 @@ const SAMPLES = [
 // ─── Main Screen ──────────────────────────────────────────────────
 
 export default function CekPesanScreen() {
+  const navigation = useNavigation();
   const { showConfirm } = useConfirmModal();
   const [inputText, setInputText] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -93,6 +95,10 @@ export default function CekPesanScreen() {
         analysisType: 'message',
       });
       setResult(analysis);
+      const status = analysis.score >= 50 ? "bahaya" : analysis.score >= 20 ? "waspada" : "aman";
+      import("../../utils/analysisHistory").then(({ addAnalysisLog }) => {
+        addAnalysisLog("pesan", "Cek Pesan: Teks Percakapan", `Gemini AI: ${analysis.verdict} (Skor Risiko: ${analysis.score}/100).`, status);
+      });
     } catch (err: any) {
       showConfirm({
         title: 'Analisis Gagal',
@@ -213,8 +219,14 @@ export default function CekPesanScreen() {
   // ── Input State ───────────────────────────────────────────────────
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
+      <View className="flex-row items-center px-5 pt-3 pb-1 gap-3">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 rounded-full bg-espresso/8 items-center justify-center">
+          <ChevronLeft color="#3E2E22" size={24} />
+        </TouchableOpacity>
+        <AppText size="lg" className="text-espresso font-heading">Kembali</AppText>
+      </View>
       <ScrollView
-        className="flex-1 px-5 pt-4"
+        className="flex-1 px-5 pt-2"
         contentContainerStyle={{ paddingBottom: 120 }}
         keyboardShouldPersistTaps="handled"
       >
@@ -235,7 +247,7 @@ export default function CekPesanScreen() {
         <Animated.View entering={FadeInDown.delay(50).springify()} className="flex-row items-center gap-2 bg-olive/10 border border-olive/20 rounded-xl px-3 py-2.5 mb-5">
           <Sparkles color="#74822F" size={16} />
           <AppText size="xs" className="text-olive font-body flex-1">
-            Ditenagai oleh Google Gemini AI — analisis cerdas dan kontekstual
+            Ditenagai oleh Google Gemini AI: analisis cerdas dan kontekstual
           </AppText>
         </Animated.View>
 
