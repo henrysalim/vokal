@@ -78,7 +78,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     // 2. Fetch from Supabase
     const { data } = await supabase
       .from('profiles')
-      .select('xp, completed_module_ids, lives, lives_refill_at, family_id, families(family_secret)')
+      .select('xp, completed_module_ids, lives, lives_refill_at, family_id, family_secret')
       .eq('id', userId)
       .single();
 
@@ -117,8 +117,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
 
     // Family secret
-    const famAny = data.families as any;
-    if (famAny?.family_secret) setFamilySecret(famAny.family_secret);
+    if (data.family_secret) setFamilySecret(data.family_secret);
   };
 
   useEffect(() => {
@@ -333,27 +332,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
-    let { data: existingFam } = await supabase
-      .from('families')
-      .select('id')
-      .eq('family_secret', cleanSecret)
-      .single();
+    // 1. Cari profile lain yang mempunyai family_secret yang sama
+    const { data: otherProfiles } = await supabase
+      .from("profiles")
+      .select("family_id")
+      .eq("family_secret", cleanSecret)
+      .not("family_id", "is", null)
+      .limit(1);
 
-    if (!existingFam) {
-      const { data: newFam } = await supabase
-        .from('families')
-        .insert([{ name: 'Keluarga VOKAL', family_secret: cleanSecret }])
-        .select('id')
-        .single();
-      existingFam = newFam;
+    let targetFamilyId = otherProfiles && otherProfiles.length > 0 ? otherProfiles[0].family_id : null;
+
+    if (!targetFamilyId) {
+      targetFamilyId = "fam_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8);
     }
 
-    if (existingFam) {
-      await supabase
-        .from('profiles')
-        .update({ family_id: existingFam.id })
-        .eq('id', session.user.id);
-    }
+    // 2. Update profiles untuk user saat ini dengan family_id dan family_secret baru
+    await supabase
+      .from("profiles")
+      .update({
+        family_id: targetFamilyId,
+        family_secret: cleanSecret
+      })
+      .eq("id", session.user.id);
   };
 
   return (

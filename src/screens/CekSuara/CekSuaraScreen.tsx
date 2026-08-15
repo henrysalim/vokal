@@ -429,9 +429,9 @@ export default function CekSuaraScreen() {
       {/* Panic Mode Modal */}
       <Modal visible={showPanicMode} animationType="slide" statusBarTranslucent>
         <View style={{ flex: 1, backgroundColor: "#1C2529" }}>
-          <LinearGradient colors={['#2A363B', '#1C2529']} style={{ flex: 1 }} className="justify-between px-6 pt-16 pb-12">
+          <LinearGradient colors={['#2A363B', '#1C2529']} style={{ flex: 1 }} className="justify-between px-6 pt-24 pb-12">
             <View className="items-end">
-              <TouchableOpacity onPress={() => setShowPanicMode(false)} className="bg-white/10 p-3 rounded-full">
+              <TouchableOpacity onPress={() => setShowPanicMode(false)} className="bg-white/10 p-4 rounded-full" hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
                 <X color="#FFFFFF" size={24} />
               </TouchableOpacity>
             </View>
@@ -476,6 +476,14 @@ export default function CekSuaraScreen() {
                   </View>
                 </TouchableOpacity>
               ))}
+              
+              <TouchableOpacity
+                onPress={() => setShowPanicMode(false)}
+                activeOpacity={0.8}
+                className="bg-white/10 py-3.5 rounded-2xl items-center mt-3 border border-white/10"
+              >
+                <AppText size="sm" className="text-white font-heading">Tutup Mode Tenang</AppText>
+              </TouchableOpacity>
             </View>
           </LinearGradient>
         </View>

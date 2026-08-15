@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, Modal, TextInput, Share, Alert, ActivityIndicator, FlatList, Linking } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Modal, TextInput, Share, Alert, ActivityIndicator, FlatList, Linking, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeOut, FadeInDown, Layout } from 'react-native-reanimated';
@@ -49,60 +49,78 @@ type FamilyMember = {
 
 export default function KeluargaScreen() {
   const { user } = useAuth();
-  const currentUserName = user?.name || 'Pengguna VOKAL';
+  const currentUserName = user?.name || "Pengguna VOKAL";
+
 
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(() => [
-    { id: user?.id || 'my-user', name: `${currentUserName} (Anda)`, role: 'Admin', status: 'Aman', verified: true }
+    { id: user?.id || "my-user", name: `${currentUserName} (Anda)`, role: "Admin", status: "Aman", verified: true }
   ]);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Load anggota keluarga dari Supabase berdasarkan family_id yang sama
-  React.useEffect(() => {
+  const loadFamilyMembers = useCallback(async () => {
     if (!isSupabaseConfigured() || !user?.id) return;
 
-    const loadFamilyMembers = async () => {
-      // Dapatkan family_id user saat ini
-      const { data: myProfile } = await supabase
-        .from('profiles')
-        .select('family_id, family_secret')
-        .eq('id', user.id)
-        .single();
+    // Dapatkan family_id user saat ini
+    const { data: myProfile } = await supabase
+      .from("profiles")
+      .select("family_id, family_secret")
+      .eq("id", user.id)
+      .single();
 
-      const myFamilyId = myProfile?.family_id;
+    const myFamilyId = myProfile?.family_id;
+    const myFamilySecret = myProfile?.family_secret || familySecret;
 
-      // Selalu tampilkan user sendiri
-      const selfMember: FamilyMember = {
-        id: user.id,
-        name: `${user.name || currentUserName} (Anda)`,
-        role: 'Admin',
-        status: 'Aman',
-        verified: true,
-      };
-
-      if (!myFamilyId) {
-        setFamilyMembers([selfMember]);
-        return;
-      }
-
-      // Load semua anggota yang family_id-nya sama
-      const { data: members } = await supabase
-        .from('profiles')
-        .select('id, name, xp, avatar_initials')
-        .eq('family_id', myFamilyId)
-        .neq('id', user.id);
-
-      const otherMembers: FamilyMember[] = (members || []).map((m: any) => ({
-        id: m.id,
-        name: m.name || 'Anggota Keluarga',
-        role: 'Anggota',
-        status: 'Aman',
-        verified: true,
-      }));
-
-      setFamilyMembers([selfMember, ...otherMembers]);
+    // Selalu tampilkan user sendiri
+    const selfMember: FamilyMember = {
+      id: user.id,
+      name: `${user.name || currentUserName} (Anda)`,
+      role: "Admin",
+      status: "Aman",
+      verified: true,
     };
 
+    if (!myFamilyId && !myFamilySecret) {
+      setFamilyMembers([selfMember]);
+      return;
+    }
+
+    // Load semua anggota yang family_id-nya sama ATAU family_secret-nya sama
+    let filterQuery = supabase
+      .from("profiles")
+      .select("id, name, xp, avatar_initials")
+      .neq("id", user.id);
+
+    if (myFamilyId && myFamilySecret) {
+      filterQuery = filterQuery.or(`family_id.eq.${myFamilyId},family_secret.eq.${myFamilySecret}`);
+    } else if (myFamilyId) {
+      filterQuery = filterQuery.eq("family_id", myFamilyId);
+    } else {
+      filterQuery = filterQuery.eq("family_secret", myFamilySecret);
+    }
+
+    const { data: members } = await filterQuery;
+
+    const otherMembers: FamilyMember[] = (members || []).map((m: any) => ({
+      id: m.id,
+      name: m.name || "Anggota Keluarga",
+      role: "Anggota",
+      status: "Aman",
+      verified: true,
+    }));
+
+    setFamilyMembers([selfMember, ...otherMembers]);
+  }, [user?.id, currentUserName]);
+
+  React.useEffect(() => {
     loadFamilyMembers();
-  }, [user?.id]);
+  }, [loadFamilyMembers, familySecret]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadFamilyMembers();
+    setRefreshing(false);
+  }, [loadFamilyMembers]);
 
   const [deviceContacts, setDeviceContacts] = useState<ContactItem[]>([]);
   const [showContactsModal, setShowContactsModal] = useState(false);
@@ -324,7 +342,14 @@ export default function KeluargaScreen() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 140, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ paddingBottom: 140, paddingHorizontal: 16 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#C1592E"]} tintColor="#C1592E" />
+        }
+      >
 
         {/* HEADER */}
         <View style={{ height: 16 }} />

@@ -401,36 +401,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
               // --- Family Code: link ke keluarga yang sudah ada ---
               if (cleanFamilyCode) {
-                const { data: existingFamily } = await supabase
-                  .from("families")
-                  .select("id")
+                const { data: otherProfiles } = await supabase
+                  .from("profiles")
+                  .select("family_id")
                   .eq("family_secret", cleanFamilyCode)
-                  .single();
+                  .not("family_id", "is", null)
+                  .limit(1);
 
-                if (existingFamily) {
-                  // Bergabung ke family_id yang sudah ada
-                  await supabase
-                    .from("profiles")
-                    .update({
-                      family_id: existingFamily.id
-                    })
-                    .eq("id", signInData.user.id);
-                } else {
-                  // Buat family baru dengan kode ini di tabel families
-                  const { data: newFamily } = await supabase
-                    .from("families")
-                    .insert([{ name: "Keluarga VOKAL", family_secret: cleanFamilyCode }])
-                    .select("id")
-                    .single();
-                  if (newFamily) {
-                    await supabase
-                      .from("profiles")
-                      .update({
-                        family_id: newFamily.id
-                      })
-                      .eq("id", signInData.user.id);
-                  }
+                let targetFamilyId = otherProfiles && otherProfiles.length > 0 ? otherProfiles[0].family_id : null;
+
+                if (!targetFamilyId) {
+                  targetFamilyId = "fam_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8);
                 }
+
+                await supabase
+                  .from("profiles")
+                  .update({
+                    family_id: targetFamilyId,
+                    family_secret: cleanFamilyCode
+                  })
+                  .eq("id", signInData.user.id);
               }
             } else {
               setUser({ id: data.user.id, name: cleanName, email: cleanEmail, avatarInitials: initials });
