@@ -136,7 +136,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       { id: 'd', text: 'Menyadap komunikasi online' },
     ],
     correctId: 'b',
-    explanation: 'Social engineering memanfaatkan emosi manusia — rasa takut, terburu-buru, atau kepercayaan — bukan kecanggihan teknis. Inilah kenapa edukasi adalah pertahanan terbaik.',
+    explanation: 'Social engineering memanfaatkan emosi manusia seperti rasa takut, terburu-buru, atau kepercayaan, dan bukan kecanggihan teknis. Inilah kenapa edukasi adalah pertahanan terbaik.',
     xpReward: 20,
   },
   {
@@ -182,7 +182,7 @@ export const QUIZ_QUESTIONS: QuizQuestion[] = [
       { id: 'd', text: 'Hubungi penipu dan minta uang dikembalikan' },
     ],
     correctId: 'a',
-    explanation: 'Waktu adalah segalanya. Hubungi bank SEGERA — semakin cepat rekening tujuan diblokir, semakin besar kemungkinan uang bisa diselamatkan. Lapor polisi bisa dilakukan setelahnya.',
+    explanation: 'Waktu adalah segalanya. Hubungi bank SEGERA. Semakin cepat rekening tujuan diblokir, semakin besar kemungkinan uang bisa diselamatkan. Lapor polisi bisa dilakukan setelahnya.',
     xpReward: 25,
   },
   {

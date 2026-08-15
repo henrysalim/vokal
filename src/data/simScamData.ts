@@ -207,7 +207,7 @@ export const SIM_SCENARIOS: SimScenario[] = [
             id: 'c',
             text: 'Minta waktu 1 jam untuk berpikir',
             isCorrect: false,
-            feedback: 'Penipu tidak akan memberi waktu — mereka akan terus menekan. Langsung tutup.',
+            feedback: 'Penipu tidak akan memberi waktu, mereka akan terus menekan. Langsung tutup.',
             xpDelta: 5,
           },
         ],
@@ -217,7 +217,7 @@ export const SIM_SCENARIOS: SimScenario[] = [
 
   {
     id: 'sim_3',
-    title: 'Kloning Suara — Level Expert',
+    title: 'Kloning Suara: Level Expert',
     difficulty: 'sulit',
     description: 'Skenario paling realistis: suara yang terdengar seperti anakmu meminta bantuan darurat.',
     context: 'Malam hari. Anakmu (Reza, 22 tahun, kuliah di luar kota) biasanya tidak hubungi di jam ini. HP berdering.',

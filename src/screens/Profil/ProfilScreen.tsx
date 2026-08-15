@@ -8,9 +8,19 @@ import {
   Settings,
   Shield,
   User,
+  X,
+  Trophy,
+  Heart,
+  Flame,
+  ShieldCheck,
+  AlertTriangle,
+  Search,
+  Mail,
+  Mic,
+  MessageSquare
 } from "lucide-react-native";
 import React, { useState } from "react";
-import { Image, ScrollView, Switch, TouchableOpacity, View } from "react-native";
+import { Image, ScrollView, Switch, TouchableOpacity, View, Modal } from "react-native";
 import Animated, {
   Easing,
   FadeInDown,
@@ -27,13 +37,17 @@ import { useLansia } from "@/src/context/LansiaContext";
 import { AppText } from "@/src/components/ui/AppText";
 
 export default function ProfilScreen() {
+  
   const spin = useSharedValue(0);
-  const { levelName } = useUser();
+  const { levelName, level, xp, completedModuleIds, lives } = useUser();
+  
   const { user, signOut } = useAuth();
   const { showConfirm } = useConfirmModal();
   const navigation = useNavigation<any>();
 
   const userName = user?.name || "Pengguna VOKAL";
+
+
   const avatarInitials = user?.avatarInitials || "VK";
 
   React.useEffect(() => {
@@ -68,6 +82,8 @@ export default function ProfilScreen() {
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-cream">
+
+
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 140 }}
@@ -141,18 +157,7 @@ export default function ProfilScreen() {
                 title: "Edit Profil",
                 onPress: () => navigation.navigate('EditProfil'),
               },
-              {
-                icon: <Bell color="#3E2E22" size={20} />,
-                title: "Notifikasi",
-                onPress: () => showConfirm({
-                  title: 'Segera Hadir',
-                  message: 'Fitur notifikasi akan tersedia di pembaruan berikutnya.',
-                  confirmText: 'Mengerti',
-                  cancelText: '',
-                  variant: 'mustard',
-                  iconType: 'info',
-                }),
-              },
+
               {
                 icon: <Settings color="#3E2E22" size={20} />,
                 title: "Pengaturan Suara",

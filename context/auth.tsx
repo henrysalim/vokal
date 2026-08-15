@@ -402,32 +402,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               // --- Family Code: link ke keluarga yang sudah ada ---
               if (cleanFamilyCode) {
                 const { data: existingFamily } = await supabase
-                  .from('profiles')
-                  .select('family_id')
-                  .eq('family_secret', cleanFamilyCode)
-                  .not('id', 'eq', signInData.user.id)
-                  .limit(1)
+                  .from("families")
+                  .select("id")
+                  .eq("family_secret", cleanFamilyCode)
                   .single();
 
-                if (existingFamily?.family_id) {
+                if (existingFamily) {
                   // Bergabung ke family_id yang sudah ada
                   await supabase
-                    .from('profiles')
+                    .from("profiles")
                     .update({
-                      family_id: existingFamily.family_id,
-                      family_secret: cleanFamilyCode,
+                      family_id: existingFamily.id
                     })
-                    .eq('id', signInData.user.id);
+                    .eq("id", signInData.user.id);
                 } else {
-                  // Buat family baru dengan kode ini sebagai founder
-                  const newFamilyId = `family_${Date.now()}`;
-                  await supabase
-                    .from('profiles')
-                    .update({
-                      family_id: newFamilyId,
-                      family_secret: cleanFamilyCode,
-                    })
-                    .eq('id', signInData.user.id);
+                  // Buat family baru dengan kode ini di tabel families
+                  const { data: newFamily } = await supabase
+                    .from("families")
+                    .insert([{ name: "Keluarga VOKAL", family_secret: cleanFamilyCode }])
+                    .select("id")
+                    .single();
+                  if (newFamily) {
+                    await supabase
+                      .from("profiles")
+                      .update({
+                        family_id: newFamily.id
+                      })
+                      .eq("id", signInData.user.id);
+                  }
                 }
               }
             } else {

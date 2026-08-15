@@ -6,9 +6,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Mail, ShieldCheck, ChevronRight, X, FileText,
-  CheckSquare, Square, AlertTriangle, RotateCcw, Sparkles
+  CheckSquare, Square, AlertTriangle, RotateCcw, Sparkles, ChevronLeft
 } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
 import { useGoogleAuth } from '../../context/GoogleAuthContext';
 import { AppText } from '../../components/ui/AppText';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
@@ -98,6 +99,7 @@ function EmailListItem({
 // ─── Main Screen ──────────────────────────────────────────────────
 
 export default function CekEmailScreen() {
+  const navigation = useNavigation();
   const { connectGoogle, ensureFreshToken, googleAccessToken, isGoogleConnected } = useGoogleAuth();
   const { showConfirm } = useConfirmModal();
 
@@ -245,6 +247,10 @@ export default function CekEmailScreen() {
       const analysis = await runGeminiAnalysis(combined, 'email');
       setAnalyzedEmails(selected.map(e => ({ subject: e.subject, from: e.from, snippet: e.snippet })));
       setResult(analysis);
+      const status = analysis.score >= 50 ? "bahaya" : analysis.score >= 20 ? "waspada" : "aman";
+      import("../../utils/analysisHistory").then(({ addAnalysisLog }) => {
+        addAnalysisLog("email", "Cek Email: Hasil Analisis", `Gemini AI: ${analysis.verdict} (Skor Phishing: ${analysis.score}/100).`, status);
+      });
       setMode('result');
     } catch (err: any) {
       showConfirm({
@@ -277,6 +283,10 @@ export default function CekEmailScreen() {
     try {
       const analysis = await runGeminiAnalysis(manualText, 'email');
       setResult(analysis);
+      const status = analysis.score >= 50 ? "bahaya" : analysis.score >= 20 ? "waspada" : "aman";
+      import("../../utils/analysisHistory").then(({ addAnalysisLog }) => {
+        addAnalysisLog("email", "Cek Email: Hasil Analisis", `Gemini AI: ${analysis.verdict} (Skor Phishing: ${analysis.score}/100).`, status);
+      });
       setMode('result');
     } catch (err: any) {
       showConfirm({
@@ -532,7 +542,13 @@ export default function CekEmailScreen() {
   if (mode === 'choose') {
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-cream">
-        <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 120 }}>
+        <View className="flex-row items-center px-5 pt-3 pb-1 gap-3">
+          <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 rounded-full bg-espresso/8 items-center justify-center">
+            <ChevronLeft color="#3E2E22" size={24} />
+          </TouchableOpacity>
+          <AppText size="lg" className="text-espresso font-heading">Kembali</AppText>
+        </View>
+        <ScrollView className="flex-1 px-5 pt-2" contentContainerStyle={{ paddingBottom: 120 }}>
 
           <Animated.View entering={FadeInDown.springify()} className="mb-6">
             <View className="flex-row items-center gap-3 mb-1">
@@ -550,7 +566,7 @@ export default function CekEmailScreen() {
           <Animated.View entering={FadeInDown.delay(50).springify()} className="flex-row items-center gap-2 bg-terracotta/10 border border-terracotta/20 rounded-xl px-3 py-2.5 mb-5">
             <Sparkles color="#C1592E" size={16} />
             <AppText size="xs" className="text-terracotta font-body flex-1 leading-relaxed">
-              Ditenagai oleh Google Gemini 1.5 Flash — analisis AI yang akurat dan kontekstual untuk penipuan Indonesia.
+              Ditenagai oleh Google Gemini 3.1 Flash-Lite - analisis AI yang akurat dan kontekstual untuk penipuan Indonesia.
             </AppText>
           </Animated.View>
 

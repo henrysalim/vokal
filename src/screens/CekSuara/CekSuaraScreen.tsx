@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Mic, ShieldAlert, ShieldCheck, Activity, Phone,
   AlertOctagon, HeartPulse, X, Cpu, ChevronDown, ChevronUp,
-  Sparkles, RotateCcw, Zap
+  Sparkles, RotateCcw, Zap, ChevronLeft
 } from 'lucide-react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat, withTiming,
@@ -16,6 +16,7 @@ import { analyzeLocalDSP, DspAnalysisResult } from '../../utils/audioAnalyzer';
 import { analyzeWithGemini, GeminiAnalysisResult } from '../../utils/geminiAnalyzer';
 import { AppText } from '../../components/ui/AppText';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
+import { useNavigation } from '@react-navigation/native';
 import { EMERGENCY_CONTACTS } from '../../data/emergencyContacts';
 
 type ScanState = 'idle' | 'recording' | 'analyzing_local' | 'analyzing_gemini' | 'result';
@@ -62,6 +63,7 @@ function FeatureBar({
 // ─── Main Screen ──────────────────────────────────────────────────
 
 export default function CekSuaraScreen() {
+  const navigation = useNavigation();
   const { showConfirm } = useConfirmModal();
   const [scanState, setScanState] = useState<ScanState>('idle');
   const [showPanicMode, setShowPanicMode] = useState(false);
@@ -169,6 +171,12 @@ export default function CekSuaraScreen() {
           // Gemini gagal — tetap tampilkan hasil DSP saja
         }
 
+        const score = geminiResult ? Math.round(geminiResult.score * 0.65 + dsp.urgencyScore * 0.35) : dsp.urgencyScore;
+        const status = score >= 60 ? "bahaya" : score >= 30 ? "waspada" : "aman";
+        const statusText = status === "bahaya" ? "Kloning AI terdeteksi" : status === "waspada" ? "Mencurigakan" : "Normal/Aman";
+        import("../../utils/analysisHistory").then(({ addAnalysisLog }) => {
+          addAnalysisLog("suara", "Cek Suara: Rekaman Audio Baru", `Risiko Kloning AI: ${score}% (${statusText}).`, status);
+        });
         setScanState('result');
       }, 5000);
 
@@ -209,7 +217,13 @@ export default function CekSuaraScreen() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <View className="flex-row items-center px-5 pt-3 pb-1 gap-3">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="w-10 h-10 rounded-full bg-espresso/8 items-center justify-center">
+          <ChevronLeft color="#3E2E22" size={24} />
+        </TouchableOpacity>
+        <AppText size="lg" className="text-espresso font-heading">Kembali</AppText>
+      </View>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120, paddingTop: 12 }} showsVerticalScrollIndicator={false}>
 
         {/* Header */}
         <View className="mb-6">
@@ -223,7 +237,7 @@ export default function CekSuaraScreen() {
           <View className="flex-row items-center gap-1.5 mt-1">
             <Sparkles color="#C1592E" size={12} />
             <AppText size="xs" className="font-body text-terracotta">
-              DSP Lokal + Gemini AI — analisis ganda untuk akurasi lebih tinggi
+              DSP Lokal + Gemini AI: analisis ganda untuk akurasi lebih tinggi
             </AppText>
           </View>
         </View>
@@ -305,7 +319,7 @@ export default function CekSuaraScreen() {
                   </View>
                 </View>
                 <View className="bg-terracotta p-3.5 rounded-xl items-center">
-                  <AppText size="sm" className="text-white font-heading uppercase tracking-wider">WASPADA — JANGAN PERCAYA</AppText>
+                  <AppText size="sm" className="text-white font-heading uppercase tracking-wider">WASPADA: JANGAN PERCAYA</AppText>
                 </View>
               </View>
             ) : (
@@ -324,7 +338,7 @@ export default function CekSuaraScreen() {
                   </View>
                 </View>
                 <View className="bg-olive p-3.5 rounded-xl items-center">
-                  <AppText size="sm" className="text-white font-heading uppercase tracking-wider">AMAN — BUKAN SUARA SINTETIS</AppText>
+                  <AppText size="sm" className="text-white font-heading uppercase tracking-wider">AMAN: BUKAN SUARA SINTETIS</AppText>
                 </View>
               </View>
             )}
@@ -413,9 +427,9 @@ export default function CekSuaraScreen() {
       </ScrollView>
 
       {/* Panic Mode Modal */}
-      {showPanicMode && (
-        <View className="absolute inset-0">
-          <LinearGradient colors={['#2A363B', '#1C2529']} className="flex-1 justify-between px-6 pt-16 pb-12">
+      <Modal visible={showPanicMode} animationType="slide" statusBarTranslucent>
+        <View style={{ flex: 1, backgroundColor: "#1C2529" }}>
+          <LinearGradient colors={['#2A363B', '#1C2529']} style={{ flex: 1 }} className="justify-between px-6 pt-16 pb-12">
             <View className="items-end">
               <TouchableOpacity onPress={() => setShowPanicMode(false)} className="bg-white/10 p-3 rounded-full">
                 <X color="#FFFFFF" size={24} />
@@ -465,7 +479,7 @@ export default function CekSuaraScreen() {
             </View>
           </LinearGradient>
         </View>
-      )}
+      </Modal>
 
     </SafeAreaView>
   );

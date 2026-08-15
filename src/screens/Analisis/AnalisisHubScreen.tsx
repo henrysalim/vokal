@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Mic, Mail, MessageSquare, Phone, Search, ChevronRight } from 'lucide-react-native';
+import { Mic, Mail, MessageSquare, Phone, Search, ChevronRight, Shield, Landmark, Radio, AlertTriangle, CreditCard } from 'lucide-react-native';
 import { AppText } from '../../components/ui/AppText';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import { EMERGENCY_CONTACTS } from '../../data/emergencyContacts';
@@ -20,6 +20,24 @@ type ToolCard = {
   bg: string;
   screenName: string;
 };
+
+
+function getContactIcon(iconName: string, color: string = "#FFFFFF") {
+  switch (iconName) {
+    case "Shield":
+      return <Shield color={color} size={20} />;
+    case "Landmark":
+      return <Landmark color={color} size={20} />;
+    case "Radio":
+      return <Radio color={color} size={20} />;
+    case "AlertTriangle":
+      return <AlertTriangle color={color} size={20} />;
+    case "CreditCard":
+      return <CreditCard color={color} size={20} />;
+    default:
+      return <Shield color={color} size={20} />;
+  }
+}
 
 export default function AnalisisHubScreen({ navigation }: AnalisisHubScreenProps) {
   const { showConfirm } = useConfirmModal();
@@ -137,7 +155,7 @@ export default function AnalisisHubScreen({ navigation }: AnalisisHubScreenProps
                 style={{ elevation: 1, shadowColor: '#3E2E22', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6 }}
               >
                 <View className={`w-11 h-11 rounded-xl items-center justify-center ${contact.color}`}>
-                  <AppText size="lg">{contact.icon}</AppText>
+                  {getContactIcon(contact.icon)}
                 </View>
                 <View className="flex-1">
                   <AppText size="sm" className="text-espresso font-heading">{contact.shortName}</AppText>

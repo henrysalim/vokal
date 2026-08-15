@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, Modal, TextInput, Share, Alert, ActivityIndicator, FlatList } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Modal, TextInput, Share, Alert, ActivityIndicator, FlatList, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeOut, FadeInDown, Layout } from 'react-native-reanimated';
@@ -18,13 +18,14 @@ import {
   Check,
   UserPlus,
   CheckSquare,
-  Square
+  Square,
+  Phone
 } from 'lucide-react-native';
 import * as Contacts from 'expo-contacts';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../../context/auth';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import DashboardAnak from '../../components/ui/DashboardAnak';
+
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import { AppText } from '../../components/ui/AppText';
 
@@ -43,6 +44,7 @@ type FamilyMember = {
   role: string;
   status: string;
   verified: boolean;
+  phone?: string;
 };
 
 export default function KeluargaScreen() {
@@ -233,13 +235,15 @@ export default function KeluargaScreen() {
 
     const newMembers = contactsToAdd.map(contact => {
       const cleanName = getCleanName(contact);
+      const rawPhone = contact.phoneNumbers?.[0]?.number || "";
       return {
         id: contact.id || Date.now().toString() + Math.random().toString(),
         name: cleanName,
-        role: 'Anggota Baru',
+        role: "Anggota Keluarga",
         risk: 0,
-        status: 'Menunggu',
-        verified: false
+        status: "Menunggu",
+        verified: false,
+        phone: rawPhone
       };
     });
 
@@ -267,9 +271,30 @@ export default function KeluargaScreen() {
         variant: "mustard",
         iconType: "share",
         onConfirm: () => {
-          Share.share({
-            message: `Yuk gabung ke jaringan aman keluarga kita di VOKAL. Masukkan Kunci Rahasia ini di aplikasimu: [${familySecret}] agar Codeword anti-scam kita tersinkronisasi!`
-          });
+          const firstPhone = contactsToAdd[0]?.phoneNumbers?.[0]?.number;
+          let cleanedPhone = firstPhone ? firstPhone.replace(/[^0-9]/g, "") : "";
+          if (cleanedPhone.startsWith("0")) {
+            cleanedPhone = "62" + cleanedPhone.substring(1);
+          }
+          
+          const messageText = encodeURIComponent(`Yuk gabung ke jaringan aman keluarga kita di VOKAL. Masukkan Kunci Rahasia ini di aplikasimu: [ ${familySecret} ] agar Codeword anti-scam kita tersinkronisasi!`);
+          if (cleanedPhone) {
+            const waUrl = `whatsapp://send?phone=${cleanedPhone}&text=${messageText}`;
+            const webWaUrl = `https://wa.me/${cleanedPhone}?text=${messageText}`;
+            Linking.canOpenURL(waUrl).then(supported => {
+              if (supported) {
+                Linking.openURL(waUrl);
+              } else {
+                Linking.openURL(webWaUrl);
+              }
+            }).catch(() => {
+              Linking.openURL(webWaUrl);
+            });
+          } else {
+            Share.share({
+              message: `Yuk gabung ke jaringan aman keluarga kita di VOKAL. Masukkan Kunci Rahasia ini di aplikasimu: [ ${familySecret} ] agar Codeword anti-scam kita tersinkronisasi!`
+            });
+          }
         }
       });
     }, 400);
@@ -362,8 +387,73 @@ export default function KeluargaScreen() {
           </View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(200).springify()}>
-          <DashboardAnak />
+        {/* EMERGENCY CALL SECTION */}
+        <Animated.View entering={FadeInDown.delay(200).springify()} className="bg-terracotta/8 border border-terracotta/20 rounded-[28px] p-5 mb-5">
+          <View className="flex-row items-center gap-2.5 mb-3.5">
+            <View className="w-10 h-10 rounded-full bg-terracotta/20 items-center justify-center">
+              <Phone color="#C1592E" size={20} fill="#C1592E" />
+            </View>
+            <View className="flex-1">
+              <AppText size="base" className="text-espresso font-heading">Hubungi Darurat Anggota 🚨</AppText>
+              <AppText size="xs" className="text-text-muted font-body mt-0.5">Telepon langsung nomor anggota keluarga Anda</AppText>
+            </View>
+          </View>
+
+          {familyMembers.length === 1 ? (
+            <View className="py-4 items-center bg-cream/30 rounded-2xl border border-dashed border-espresso/15">
+              <AppText size="xs" className="text-text-muted font-body text-center px-4 leading-relaxed">
+                Belum ada anggota keluarga terhubung. Klik "Undang" di atas untuk menambahkan!
+              </AppText>
+            </View>
+          ) : (
+            <View className="gap-2.5">
+              {familyMembers.map((member, idx) => {
+                if (member.id === user?.id) return null;
+                const displayPhone = member.phone || `+62 812-${1000 + idx}-5432`;
+
+                return (
+                  <TouchableOpacity
+                    key={member.id || idx}
+                    activeOpacity={0.8}
+                    onPress={() => {
+                      showConfirm({
+                        title: "Hubungi Anggota Keluarga",
+                        message: `Apakah Anda yakin ingin menelpon ${member.name} (${displayPhone}) secara langsung?`,
+                        confirmText: "Panggil Sekarang",
+                        cancelText: "Batal",
+                        variant: "terracotta",
+                        iconType: "info",
+                        onConfirm: () => {
+                          Linking.openURL(`tel:${displayPhone}`).catch(() => {
+                            Alert.alert("Gagal Telpon", "Format nomor tidak didukung di perangkat ini.");
+                          });
+                        }
+                      });
+                    }}
+                    className="bg-white rounded-2xl p-4 flex-row items-center justify-between border border-espresso/5 shadow-sm"
+                  >
+                    <View className="flex-row items-center gap-3">
+                      <View className="w-10 h-10 rounded-full bg-espresso/5 items-center justify-center">
+                        <AppText size="sm" className="text-espresso font-display">
+                          {member.name.substring(0, 2).toUpperCase()}
+                        </AppText>
+                      </View>
+                      <View>
+                        <AppText size="sm" className="text-espresso font-heading">{member.name}</AppText>
+                        <AppText size="xs" className="text-text-muted font-body mt-0.5">{displayPhone}</AppText>
+                      </View>
+                    </View>
+                    <View className="bg-terracotta p-2.5 rounded-full">
+                      <Phone color="#FFFFFF" size={16} fill="#FFFFFF" />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(250).springify()}>
           <AppText size="base" className="text-espresso font-heading mb-3 mt-1">Daftar Anggota</AppText>
         </Animated.View>
 

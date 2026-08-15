@@ -1,17 +1,35 @@
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Phone, Shield, AlertTriangle } from 'lucide-react-native';
+import { Phone, Shield, AlertTriangle, Landmark, Radio, CreditCard } from 'lucide-react-native';
 import { AppText } from '../../components/ui/AppText';
 import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import { EMERGENCY_CONTACTS, EmergencyContact } from '../../data/emergencyContacts';
+
+
+function getContactIcon(iconName: string, color: string = "#FFFFFF") {
+  switch (iconName) {
+    case "Shield":
+      return <Shield color={color} size={24} />;
+    case "Landmark":
+      return <Landmark color={color} size={24} />;
+    case "Radio":
+      return <Radio color={color} size={24} />;
+    case "AlertTriangle":
+      return <AlertTriangle color={color} size={24} />;
+    case "CreditCard":
+      return <CreditCard color={color} size={24} />;
+    default:
+      return <Shield color={color} size={24} />;
+  }
+}
 
 function ContactCard({ contact, onCall }: { contact: EmergencyContact; onCall: (phone: string, name: string) => void }) {
   return (
     <View className="bg-surface rounded-[20px] p-4 mb-3 shadow-sm" style={{ elevation: 1, shadowColor: '#3E2E22', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 2 }, shadowRadius: 8 }}>
       <View className="flex-row items-center gap-3">
         <View className={`w-14 h-14 rounded-2xl items-center justify-center ${contact.color}`}>
-          <AppText size="2xl">{contact.icon}</AppText>
+          {getContactIcon(contact.icon)}
         </View>
         <View className="flex-1">
           <AppText size="sm" className="text-espresso font-heading leading-tight">{contact.name}</AppText>
