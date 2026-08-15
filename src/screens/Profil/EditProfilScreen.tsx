@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { ChevronLeft, User, Mail, CheckCircle2, Camera, Trash2 } from 'lucide-react-native';
+import { ChevronLeft, User, Mail, CheckCircle2, Camera, Trash2, Phone } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../../context/auth';
@@ -15,6 +15,13 @@ export default function EditProfilScreen() {
   const { showConfirm } = useConfirmModal();
 
   const [name, setName] = useState(user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+
+  React.useEffect(() => {
+    if (user?.phone !== undefined) {
+      setPhone(user.phone || '');
+    }
+  }, [user?.phone]);
   const [avatarUri, setAvatarUri] = useState<string | null>(user?.avatarUrl || null);
   const email = user?.email || '';
 
@@ -69,7 +76,7 @@ export default function EditProfilScreen() {
       return;
     }
 
-    const success = await updateProfile(name, avatarUri);
+    const success = await updateProfile(name, avatarUri, phone);
     if (success) {
       showConfirm({
         title: 'Berhasil',
@@ -145,6 +152,26 @@ export default function EditProfilScreen() {
                 editable={!isLoading}
               />
             </View>
+          </View>
+
+          {/* NOMOR TELEPON (WA) INPUT */}
+          <View className="mb-5">
+            <AppText size="xs" className="font-heading text-espresso mb-2 uppercase tracking-wider">Nomor Telepon (WA)</AppText>
+            <View className="flex-row items-center bg-cream/60 rounded-2xl px-4 py-3 border border-espresso/10">
+              <Phone color="#3E2E22" size={20} opacity={0.6} />
+              <TextInput
+                className="flex-1 ml-3 font-body text-espresso text-base"
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="Contoh: 081234567890"
+                placeholderTextColor="#A0958C"
+                keyboardType="phone-pad"
+                editable={!isLoading}
+              />
+            </View>
+            <AppText size="xs" className="text-text-muted font-body mt-1.5 ml-1">
+              Nomor ini digunakan agar anggota keluarga dapat menghubungi Anda secara langsung.
+            </AppText>
           </View>
 
           <View className="mb-2">

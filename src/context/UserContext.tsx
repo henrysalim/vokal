@@ -54,7 +54,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const loadProfile = async (userId: string) => {
     let localXp = 0;
 
-    // 1. Load cached XP & completed modules from AsyncStorage first
+    // 1. Load cached XP, completed modules, and family secret from AsyncStorage first
     try {
       const cachedXp = await AsyncStorage.getItem(`vokal_xp_${userId}`);
       if (cachedXp !== null) {
@@ -68,6 +68,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (Array.isArray(parsed) && parsed.length > 0) {
           setCompletedModuleIds(parsed);
         }
+      }
+
+      const cachedSecret = await AsyncStorage.getItem(`@vokal_family_secret_${userId}`);
+      if (cachedSecret) {
+        setFamilySecret(cachedSecret);
       }
     } catch {
       // silent fallback
@@ -116,9 +121,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLivesRefillAt(refillAt);
     }
 
-    // Family secret
-    const famAny = data.families as any;
-    if (famAny?.family_secret) setFamilySecret(famAny.family_secret);
+    // Family secret extraction
+    const famSecret = (data.families as any)?.family_secret || (data as any).family_secret;
+    if (famSecret) {
+      setFamilySecret(famSecret);
+      AsyncStorage.setItem(`@vokal_family_secret_${userId}`, famSecret).catch(() => {});
+    }
   };
 
   useEffect(() => {
@@ -328,31 +336,44 @@ export function UserProvider({ children }: { children: ReactNode }) {
     if (cleanSecret.length === 0) return;
     setFamilySecret(cleanSecret);
 
-    if (!isSupabaseConfigured()) return;
-
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
+    const userId = session?.user?.id;
+    if (userId) {
+      AsyncStorage.setItem(`@vokal_family_secret_${userId}`, cleanSecret).catch(() => {});
+    }
 
+    if (!isSupabaseConfigured() || !userId) return;
+
+    // 1. Cari di tabel families apakah seed ini sudah ada
     let { data: existingFam } = await supabase
-      .from('families')
-      .select('id')
-      .eq('family_secret', cleanSecret)
-      .single();
+      .from("families")
+      .select("id")
+      .eq("family_secret", cleanSecret)
+      .maybeSingle();
 
     if (!existingFam) {
+      // 2. Jika belum ada, buat entri keluarga baru di tabel families
       const { data: newFam } = await supabase
-        .from('families')
-        .insert([{ name: 'Keluarga VOKAL', family_secret: cleanSecret }])
-        .select('id')
-        .single();
+        .from("families")
+        .insert([{ name: "Keluarga VOKAL", family_secret: cleanSecret }])
+        .select("id")
+        .maybeSingle();
       existingFam = newFam;
     }
 
-    if (existingFam) {
-      await supabase
-        .from('profiles')
-        .update({ family_id: existingFam.id })
-        .eq('id', session.user.id);
+    if (existingFam?.id) {
+      // 3. Update profiles user saat ini dengan family_id keluarga tersebut
+      let { error } = await supabase
+        .from("profiles")
+        .update({ family_id: existingFam.id, family_secret: cleanSecret })
+        .eq("id", userId);
+
+      if (error && error.message && error.message.includes("family_secret")) {
+        await supabase
+          .from("profiles")
+          .update({ family_id: existingFam.id })
+          .eq("id", userId);
+      }
     }
   };
 

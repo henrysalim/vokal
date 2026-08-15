@@ -92,19 +92,23 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         onConfirm: async () => {
           const newSecret = generateRandomSecret();
           await updateFamilySecret(newSecret);
-          showConfirm({
-            title: "Codeword Diperbarui!",
-            message: `Kunci rahasia baru: [ ${newSecret} ]\n\nCodeword hari ini telah disinkronkan ulang. Segera bagikan kunci baru ini ke keluarga Anda agar tetap sinkron.`,
-            confirmText: "Bagikan ke Keluarga",
-            cancelText: "Selesai",
-            variant: "olive",
-            iconType: "success",
-            onConfirm: () => {
-              Share.share({
-                message: `Yuk gabung ke jaringan aman keluarga kita di VOKAL.\n\nKata rahasia (Codeword) hari ini adalah: [ ${codeword.word} ]\n\nMasukkan Kunci Rahasia baru ini di aplikasi VOKAL milikmu: [ ${newSecret} ] agar Codeword anti-scam kita selalu sinkron!`,
-              });
-            },
-          });
+          setTimeout(() => {
+            showConfirm({
+              title: "Codeword Diperbarui!",
+              message: `Kunci rahasia baru: [ ${newSecret} ]\n\nCodeword hari ini telah disinkronkan ulang. Segera bagikan kunci baru ini ke keluarga Anda agar tetap sinkron.`,
+              confirmText: "Bagikan ke Keluarga",
+              cancelText: "Selesai",
+              variant: "olive",
+              iconType: "success",
+              onConfirm: () => {
+                setTimeout(() => {
+                  Share.share({
+                    message: `Yuk gabung ke jaringan aman keluarga kita di VOKAL.\n\nKata rahasia (Codeword) hari ini adalah: [ ${codeword.word} ]\n\nMasukkan Kunci Rahasia baru ini di aplikasi VOKAL milikmu: [ ${newSecret} ] agar Codeword anti-scam kita selalu sinkron!`,
+                  });
+                }, 500);
+              },
+            });
+          }, 500);
         },
       });
     } else if (id === "latihan") {
