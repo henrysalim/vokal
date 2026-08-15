@@ -1,3 +1,4 @@
+import { useFocusEffect } from '@react-navigation/native';
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, ScrollView, TouchableOpacity, Modal, TextInput, Share, Alert, ActivityIndicator, FlatList, Linking, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,9 +20,12 @@ import {
   UserPlus,
   CheckSquare,
   Square,
-  Phone
+  Phone,
+  Trash2,
+  Share2
 } from 'lucide-react-native';
 import * as Contacts from 'expo-contacts';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../../context/auth';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
@@ -53,68 +57,104 @@ export default function KeluargaScreen() {
 
 
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(() => [
-    { id: user?.id || "my-user", name: `${currentUserName} (Anda)`, role: "Admin", status: "Aman", verified: true }
+    { id: user?.id || "my-user", name: `${user?.name || currentUserName} (Anda)`, role: "Admin", status: "Aman", verified: true }
   ]);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Load anggota keluarga dari Supabase berdasarkan family_id yang sama
+
+  const PENDING_STORAGE_KEY = user?.id ? `@vokal_pending_members_${user.id}` : "@vokal_pending_members_guest";
+
+  const getPendingMembers = useCallback(async (): Promise<FamilyMember[]> => {
+    try {
+      const data = await AsyncStorage.getItem(PENDING_STORAGE_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  }, [PENDING_STORAGE_KEY]);
+
+  const savePendingMembers = useCallback(async (members: FamilyMember[]) => {
+    try {
+      await AsyncStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify(members));
+    } catch (e) {
+      console.error("Error saving pending members:", e);
+    }
+  }, [PENDING_STORAGE_KEY]);
+
+  // Load anggota keluarga dari Supabase & AsyncStorage
   const loadFamilyMembers = useCallback(async () => {
-    if (!isSupabaseConfigured() || !user?.id) return;
+    const selfMember: FamilyMember = {
+      id: user?.id || "my-user",
+      name: `${user?.name || currentUserName} (Anda)`,
+      role: "Admin",
+      status: "Aman",
+      verified: true,
+      phone: user?.phone || undefined,
+    };
+
+    const savedPending = await getPendingMembers();
+
+    if (!isSupabaseConfigured() || !user?.id) {
+      setFamilyMembers([selfMember, ...savedPending]);
+      return;
+    }
 
     // Dapatkan family_id user saat ini
     const { data: myProfile } = await supabase
       .from("profiles")
-      .select("family_id, family_secret")
+      .select("family_id, families(family_secret)")
       .eq("id", user.id)
       .single();
 
     const myFamilyId = myProfile?.family_id;
-    const myFamilySecret = myProfile?.family_secret || familySecret;
+    const myFamilySecret = (myProfile?.families as any)?.family_secret || familySecret;
 
-    // Selalu tampilkan user sendiri
-    const selfMember: FamilyMember = {
-      id: user.id,
-      name: `${user.name || currentUserName} (Anda)`,
-      role: "Admin",
-      status: "Aman",
-      verified: true,
-    };
-
-    if (!myFamilyId && !myFamilySecret) {
-      setFamilyMembers([selfMember]);
+    if (!myFamilyId) {
+      setFamilyMembers([selfMember, ...savedPending]);
       return;
     }
 
-    // Load semua anggota yang family_id-nya sama ATAU family_secret-nya sama
-    let filterQuery = supabase
+    // Load semua anggota yang family_id-nya sama (dengan fallback aman jika kolom phone belum dibuat di DB)
+    let { data: members, error: memErr } = await supabase
       .from("profiles")
-      .select("id, name, xp, avatar_initials")
+      .select("id, name, phone, xp, avatar_initials")
+      .eq("family_id", myFamilyId)
       .neq("id", user.id);
 
-    if (myFamilyId && myFamilySecret) {
-      filterQuery = filterQuery.or(`family_id.eq.${myFamilyId},family_secret.eq.${myFamilySecret}`);
-    } else if (myFamilyId) {
-      filterQuery = filterQuery.eq("family_id", myFamilyId);
-    } else {
-      filterQuery = filterQuery.eq("family_secret", myFamilySecret);
+    if (memErr) {
+      const { data: fallbackMembers } = await supabase
+        .from("profiles")
+        .select("id, name, xp, avatar_initials")
+        .eq("family_id", myFamilyId)
+        .neq("id", user.id);
+      members = fallbackMembers;
     }
-
-    const { data: members } = await filterQuery;
 
     const otherMembers: FamilyMember[] = (members || []).map((m: any) => ({
       id: m.id,
       name: m.name || "Anggota Keluarga",
+      phone: m.phone || undefined,
       role: "Anggota",
       status: "Aman",
       verified: true,
     }));
 
-    setFamilyMembers([selfMember, ...otherMembers]);
-  }, [user?.id, currentUserName]);
+    // Filter pending agar tidak menduplikasi anggota yang sudah aktif di Supabase
+    const dbNames = new Set(otherMembers.map(m => (m.name || "").toLowerCase()));
+    const activePending = savedPending.filter(p => !dbNames.has((p.name || "").toLowerCase()));
+
+    setFamilyMembers([selfMember, ...otherMembers, ...activePending]);
+  }, [user?.id, user?.name, currentUserName, familySecret, getPendingMembers]);
 
   React.useEffect(() => {
     loadFamilyMembers();
-  }, [loadFamilyMembers, familySecret]);
+  }, [loadFamilyMembers]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadFamilyMembers();
+    }, [loadFamilyMembers])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -248,28 +288,34 @@ export default function KeluargaScreen() {
     }
   };
 
-  const addContactsToFamily = (contactsToAdd: ContactItem[]) => {
+  const addContactsToFamily = async (contactsToAdd: ContactItem[]) => {
     if (contactsToAdd.length === 0) return;
 
-    const newMembers = contactsToAdd.map(contact => {
+    const newMembers: FamilyMember[] = contactsToAdd.map(contact => {
       const cleanName = getCleanName(contact);
       const rawPhone = contact.phoneNumbers?.[0]?.number || "";
       return {
         id: contact.id || Date.now().toString() + Math.random().toString(),
         name: cleanName,
         role: "Anggota Keluarga",
-        risk: 0,
         status: "Menunggu",
         verified: false,
         phone: rawPhone
       };
     });
 
-    setFamilyMembers(prev => {
-      const existingNames = new Set(prev.map(m => m.name.toLowerCase()));
-      const filteredNew = newMembers.filter(m => !existingNames.has(m.name.toLowerCase()));
-      return [...prev, ...filteredNew];
-    });
+    const currentPending = await getPendingMembers();
+    const existingNames = new Set([
+      ...familyMembers.map(m => (m.name || '').toLowerCase()),
+      ...currentPending.map(m => (m.name || '').toLowerCase())
+    ]);
+    const filteredNew = newMembers.filter(m => !existingNames.has((m.name || '').toLowerCase()));
+
+    if (filteredNew.length > 0) {
+      const updatedPending = [...currentPending, ...filteredNew];
+      await savePendingMembers(updatedPending);
+      setFamilyMembers(prev => [...prev, ...filteredNew]);
+    }
 
     setShowContactsModal(false);
     setSelectedContactIds([]);
@@ -316,6 +362,49 @@ export default function KeluargaScreen() {
         }
       });
     }, 400);
+  };
+
+  const removePendingMember = (memberId: string, memberName: string) => {
+    showConfirm({
+      title: "Hapus Undangan",
+      message: `Hapus ${memberName} dari daftar keluarga?`,
+      confirmText: "Hapus",
+      cancelText: "Batal",
+      variant: "terracotta",
+      iconType: "danger",
+      onConfirm: async () => {
+        const currentPending = await getPendingMembers();
+        const updatedPending = currentPending.filter(m => m.id !== memberId && m.name !== memberName);
+        await savePendingMembers(updatedPending);
+        setFamilyMembers(prev => prev.filter(m => m.id !== memberId));
+      }
+    });
+  };
+
+  const resendInvite = (member: FamilyMember) => {
+    let cleanedPhone = member.phone ? member.phone.replace(/[^0-9]/g, "") : "";
+    if (cleanedPhone.startsWith("0")) {
+      cleanedPhone = "62" + cleanedPhone.substring(1);
+    }
+
+    const messageText = encodeURIComponent(`Yuk gabung ke jaringan aman keluarga kita di VOKAL. Masukkan Kunci Rahasia ini di aplikasimu: [ ${familySecret} ] agar Codeword anti-scam kita tersinkronisasi!`);
+    if (cleanedPhone) {
+      const waUrl = `whatsapp://send?phone=${cleanedPhone}&text=${messageText}`;
+      const webWaUrl = `https://wa.me/${cleanedPhone}?text=${messageText}`;
+      Linking.canOpenURL(waUrl).then(supported => {
+        if (supported) {
+          Linking.openURL(waUrl);
+        } else {
+          Linking.openURL(webWaUrl);
+        }
+      }).catch(() => {
+        Linking.openURL(webWaUrl);
+      });
+    } else {
+      Share.share({
+        message: `Yuk gabung ke jaringan aman keluarga kita di VOKAL. Masukkan Kunci Rahasia ini di aplikasimu: [ ${familySecret} ] agar Codeword anti-scam kita tersinkronisasi!`
+      });
+    }
   };
 
   const handlePickSelected = () => {
@@ -434,13 +523,26 @@ export default function KeluargaScreen() {
             <View className="gap-2.5">
               {familyMembers.map((member, idx) => {
                 if (member.id === user?.id) return null;
-                const displayPhone = member.phone || `+62 812-${1000 + idx}-5432`;
+                const hasPhone = member.phone && member.phone.trim().length > 0;
+                const displayPhone = hasPhone ? member.phone : "Belum Mengisi No. Telp";
 
                 return (
                   <TouchableOpacity
                     key={member.id || idx}
                     activeOpacity={0.8}
                     onPress={() => {
+                      if (!hasPhone) {
+                        showConfirm({
+                          title: "Nomor Belum Ada",
+                          message: `${member.name} belum menambahkan nomor telepon di profil mereka.`,
+                          confirmText: "Mengerti",
+                          cancelText: "",
+                          variant: "mustard",
+                          iconType: "warning",
+                        });
+                        return;
+                      }
+
                       showConfirm({
                         title: "Hubungi Anggota Keluarga",
                         message: `Apakah Anda yakin ingin menelpon ${member.name} (${displayPhone}) secara langsung?`,
@@ -465,10 +567,12 @@ export default function KeluargaScreen() {
                       </View>
                       <View>
                         <AppText size="sm" className="text-espresso font-heading">{member.name}</AppText>
-                        <AppText size="xs" className="text-text-muted font-body mt-0.5">{displayPhone}</AppText>
+                        <AppText size="xs" className={`font-body mt-0.5 ${hasPhone ? "text-text-muted" : "text-terracotta font-bold"}`}>
+                          {displayPhone}
+                        </AppText>
                       </View>
                     </View>
-                    <View className="bg-terracotta p-2.5 rounded-full">
+                    <View className={`p-2.5 rounded-full ${hasPhone ? "bg-terracotta" : "bg-espresso/20"}`}>
                       <Phone color="#FFFFFF" size={16} fill="#FFFFFF" />
                     </View>
                   </TouchableOpacity>
@@ -517,23 +621,48 @@ export default function KeluargaScreen() {
 
                 {isExpanded && (
                   <Animated.View entering={FadeIn} exiting={FadeOut} className="px-4 pb-4 pt-1 border-t border-espresso/5">
-                    <View className="flex-row items-center gap-2 mb-3">
-                      <AppText size="xs" className="font-body text-text-muted">Status Codeword:</AppText>
-                      {member.verified
-                        ? <AppText size="xs" className="text-olive font-bold">Terverifikasi ✓</AppText>
-                        : <AppText size="xs" className="text-terracotta font-bold">Belum Diverifikasi</AppText>
-                      }
+                    <View className="flex-row items-center justify-between mb-3">
+                      <View className="flex-row items-center gap-2">
+                        <AppText size="xs" className="font-body text-text-muted">Status Codeword:</AppText>
+                        {member.verified
+                          ? <AppText size="xs" className="text-olive font-bold">Terverifikasi ✓</AppText>
+                          : <AppText size="xs" className="text-mustard font-bold">Menunggu Bergabung...</AppText>
+                        }
+                      </View>
+                      {isWaiting && (
+                        <TouchableOpacity
+                          activeOpacity={0.7}
+                          onPress={() => removePendingMember(member.id, member.name)}
+                          className="p-1.5 rounded-lg bg-terracotta/10 flex-row items-center gap-1"
+                        >
+                          <Trash2 color="#C1592E" size={14} />
+                          <AppText size="xs" className="text-terracotta font-display">Hapus</AppText>
+                        </TouchableOpacity>
+                      )}
                     </View>
 
                     {!isMe && (
-                      <TouchableOpacity
-                        activeOpacity={0.8}
-                        onPress={() => handleSilentAlarm(member.name)}
-                        className="bg-terracotta/10 border border-terracotta/30 py-2.5 px-4 rounded-xl items-center flex-row justify-center gap-2"
-                      >
-                        <BellRing color="#C1592E" size={14} />
-                        <AppText size="xs" className="text-terracotta font-display">Kirim Alarm Senyap</AppText>
-                      </TouchableOpacity>
+                      <View className="flex-row gap-2">
+                        {isWaiting ? (
+                          <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => resendInvite(member)}
+                            className="flex-1 bg-mustard/15 border border-mustard/30 py-2.5 px-4 rounded-xl items-center flex-row justify-center gap-2"
+                          >
+                            <Share2 color="#855B14" size={14} />
+                            <AppText size="xs" className="text-espresso font-display">Kirim Ulang Undangan</AppText>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => handleSilentAlarm(member.name)}
+                            className="flex-1 bg-terracotta/10 border border-terracotta/30 py-2.5 px-4 rounded-xl items-center flex-row justify-center gap-2"
+                          >
+                            <BellRing color="#C1592E" size={14} />
+                            <AppText size="xs" className="text-terracotta font-display">Kirim Alarm Senyap</AppText>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     )}
                   </Animated.View>
                 )}
@@ -570,9 +699,10 @@ export default function KeluargaScreen() {
 
               <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={() => {
-                  updateFamilySecret(tempSeed);
+                onPress={async () => {
+                  await updateFamilySecret(tempSeed);
                   setShowSeedModal(false);
+                  await loadFamilyMembers();
                 }}
                 className="w-full bg-mustard py-4 rounded-xl items-center border-b-4 border-[#d49232]"
               >

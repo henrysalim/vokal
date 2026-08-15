@@ -14,6 +14,7 @@ type User = {
   email: string;
   avatarInitials: string;
   avatarUrl?: string | null;
+  phone?: string | null;
 };
 
 type AuthContextValue = {
@@ -27,7 +28,7 @@ type AuthContextValue = {
   signUpWithGoogle: () => Promise<void>;
   signOut: () => void;
   completeOnboarding: () => void;
-  updateProfile: (newName: string, newAvatarUrl?: string | null) => Promise<boolean>;
+  updateProfile: (newName: string, newAvatarUrl?: string | null, newPhone?: string | null) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -40,6 +41,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUserProfile = async (userId: string, defaultEmail: string, fallbackName?: string) => {
     try {
+      const cachedPhone = await AsyncStorage.getItem(`@vokal_user_phone_${userId}`).catch(() => null);
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
@@ -49,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const name = profile?.name || fallbackName || defaultEmail.split('@')[0] || 'Pengguna VOKAL';
       const initials = profile?.avatar_initials || name.substring(0, 2).toUpperCase();
       const avatarUrl = profile?.avatar_url || null;
+      const phone = profile?.phone || cachedPhone || null;
 
       if (!profile) {
         await supabase.from('profiles').upsert({
@@ -56,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: defaultEmail,
           name: name,
           avatar_initials: initials,
-        });
+        }).catch(() => {});
       }
 
       setUser({
@@ -64,16 +68,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name,
         email: defaultEmail,
         avatarInitials: initials,
-        avatarUrl
+        avatarUrl,
+        phone,
       });
     } catch (e) {
+      const cachedPhone = await AsyncStorage.getItem(`@vokal_user_phone_${userId}`).catch(() => null);
       const name = fallbackName || defaultEmail.split('@')[0] || 'Pengguna VOKAL';
       setUser({
         id: userId,
         name,
         email: defaultEmail,
         avatarInitials: name.substring(0, 2).toUpperCase(),
-        avatarUrl: null
+        avatarUrl: null,
+        phone: cachedPhone || null,
       });
     }
   };
@@ -132,8 +139,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const updateProfile = useCallback(
-    async (newName: string, newAvatarUrl?: string | null): Promise<boolean> => {
+    async (newName: string, newAvatarUrl?: string | null, newPhone?: string | null): Promise<boolean> => {
       const cleanName = newName.trim();
+      const cleanPhone = newPhone !== undefined ? (newPhone ? newPhone.trim() : null) : (user?.phone || null);
       if (!cleanName || !user) {
         Alert.alert('Error', 'Nama tidak boleh kosong.');
         return false;
@@ -142,28 +150,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       try {
         const initials = cleanName
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase();
+          .split(' ')
+          .map((w) => w[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase();
 
         const avatarUrlToSave = newAvatarUrl !== undefined ? newAvatarUrl : user.avatarUrl;
+        const phoneToSave = cleanPhone;
 
+        // 1. Simpan ke local cache AsyncStorage terlebih dahulu
+        if (phoneToSave !== undefined) {
+          await AsyncStorage.setItem(`@vokal_user_phone_${user.id}`, phoneToSave || '').catch(() => {});
+        }
+
+        // 2. Simpan ke Supabase DB
         if (isSupabaseConfigured()) {
-          const {error} = await supabase
+          let { error } = await supabase
             .from('profiles')
             .upsert({
               id: user.id,
               name: cleanName,
               avatar_initials: initials,
               avatar_url: avatarUrlToSave,
+              phone: phoneToSave,
               email: user.email,
-            })
+            });
+
+          // Jika kolom phone belum dibuat di Supabase, lakukan fallback tanpa kolom phone
+          if (error && error.message && error.message.includes('phone')) {
+            const res = await supabase
+              .from('profiles')
+              .upsert({
+                id: user.id,
+                name: cleanName,
+                avatar_initials: initials,
+                avatar_url: avatarUrlToSave,
+                email: user.email,
+              });
+            error = res.error;
+          }
 
           if (error) {
             Alert.alert('Gagal Memperbarui Profil', error.message);
-            return false
+            return false;
           }
         }
 
@@ -171,7 +201,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ...user,
           name: cleanName,
           avatarInitials: initials,
-          avatarUrl: avatarUrlToSave
+          avatarUrl: avatarUrlToSave,
+          phone: phoneToSave,
         });
 
         return true;
