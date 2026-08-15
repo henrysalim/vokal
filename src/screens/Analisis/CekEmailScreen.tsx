@@ -112,6 +112,8 @@ export default function CekEmailScreen() {
   const [emails, setEmails] = useState<EmailItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [analyzedEmails, setAnalyzedEmails] = useState<{ subject: string; from: string; snippet: string }[]>([]);
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // ── Gmail Fetch ──────────────────────────────────────────────────
   const handleConnectGmail = async () => {
@@ -136,25 +138,32 @@ export default function CekEmailScreen() {
     }
   };
 
-  const fetchGmailEmails = async (accessToken: string) => {
-    const listRes = await fetch(
-      `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${GMAIL_FETCH_LIMIT}&labelIds=INBOX`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
+  const fetchGmailEmails = async (accessToken: string, pageToken?: string) => {
+    const isLoadMore = !!pageToken;
+    let url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${GMAIL_FETCH_LIMIT}&labelIds=INBOX`;
+    if (pageToken) {
+      url += `&pageToken=${pageToken}`;
+    }
+
+    const listRes = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
     const listJson = await listRes.json();
 
     if (listJson.error) throw new Error(listJson.error.message || 'Gagal akses Gmail API.');
 
     const messages: Array<{ id: string }> = listJson.messages || [];
     if (messages.length === 0) {
-      showConfirm({
-        title: 'Inbox Kosong',
-        message: 'Tidak ditemukan email di Inbox.',
-        confirmText: 'Mengerti',
-        cancelText: '',
-        variant: 'mustard',
-        iconType: 'info',
-      });
+      if (!isLoadMore) {
+        showConfirm({
+          title: 'Inbox Kosong',
+          message: 'Tidak ditemukan email di Inbox.',
+          confirmText: 'Mengerti',
+          cancelText: '',
+          variant: 'mustard',
+          iconType: 'info',
+        });
+      } else {
+        setNextPageToken(null);
+      }
       return;
     }
 
@@ -172,13 +181,38 @@ export default function CekEmailScreen() {
       fetched.push({ id: msg.id, subject, from, snippet, body: `${subject} ${from} ${snippet}` });
     }
 
-    setEmails(fetched);
-    const initialSelected: Record<string, boolean> = {};
-    fetched.forEach(e => {
-      initialSelected[e.id] = true;
-    });
-    setSelectedIds(initialSelected);
-    setMode('gmail_list');
+    setNextPageToken(listJson.nextPageToken || null);
+
+    if (isLoadMore) {
+      setEmails(prev => [...prev, ...fetched]);
+    } else {
+      setEmails(fetched);
+      setSelectedIds({});
+      setMode('gmail_list');
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (!nextPageToken || isLoadingMore) return;
+    try {
+      setIsLoadingMore(true);
+      let token = googleAccessToken;
+      if (!token) token = await connectGoogle();
+      else token = await ensureFreshToken();
+      if (!token) return;
+      await fetchGmailEmails(token, nextPageToken);
+    } catch (err: any) {
+      showConfirm({
+        title: 'Gagal Memuat Lebih Banyak',
+        message: err.message || 'Silakan coba lagi.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'danger',
+      });
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   // ── Gemini Analysis ──────────────────────────────────────────────
@@ -264,6 +298,7 @@ export default function CekEmailScreen() {
     setEmails([]);
     setSelectedIds({});
     setAnalyzedEmails([]);
+    setNextPageToken(null);
     setMode('choose');
   };
 
@@ -363,6 +398,24 @@ export default function CekEmailScreen() {
               onToggle={() => toggleSelect(email.id)}
             />
           ))}
+
+          {nextPageToken && (
+            <TouchableOpacity
+              onPress={handleLoadMore}
+              disabled={isLoadingMore}
+              activeOpacity={0.8}
+              className="bg-surface border border-espresso/15 rounded-2xl py-3.5 px-4 items-center justify-center my-3 flex-row gap-2 min-h-11"
+            >
+              {isLoadingMore ? (
+                <>
+                  <ActivityIndicator size="small" color="#C1592E" />
+                  <AppText size="sm" className="text-espresso font-heading">Memuat Email Lainnya...</AppText>
+                </>
+              ) : (
+                <AppText size="sm" className="text-espresso font-heading">Muat Lebih Banyak Email</AppText>
+              )}
+            </TouchableOpacity>
+          )}
         </ScrollView>
 
         {/* Analyze button fixed at bottom (pushed up to clear the absolute tab bar) */}
