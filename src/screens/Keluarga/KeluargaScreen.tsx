@@ -291,45 +291,57 @@ export default function KeluargaScreen() {
     addContactsToFamily(selected);
   };
 
+  const handleSilentAlarm = (memberName: string) => {
+    Share.share({
+      message: `🚨 ALARM SENYAP dari VOKAL\n\n${currentUserName} mengirimkan sinyal darurat! Harap segera hubungi mereka sekarang.\n\nSeseorang mungkin sedang dalam situasi berbahaya. Jangan abaikan pesan ini.`,
+    }).catch(() => {});
+  };
+
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
-      <ScrollView className="flex-1 px-5 pt-4" contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 140, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
 
         {/* HEADER */}
+        <View style={{ height: 16 }} />
         <Animated.View entering={FadeInDown.delay(100).springify()}>
-          <TouchableOpacity activeOpacity={0.9} className="rounded-[32px] overflow-hidden mb-6 shadow-sm" style={{ elevation: 2, shadowColor: '#3E2E22', shadowOpacity: 0.2, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12 }}>
-            <LinearGradient colors={['#3E2E22', '#5A4634']} className="p-6">
-              <View className="flex-row justify-between items-center mb-4">
-                <AppText size="xl" className="text-cream font-heading">Family Trust Graph</AppText>
-                <View className="bg-mustard/20 px-3 py-1 rounded-full">
+          <View className="rounded-[28px] overflow-hidden mb-5" style={{ elevation: 2, shadowColor: '#3E2E22', shadowOpacity: 0.2, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12 }}>
+            <LinearGradient colors={['#3E2E22', '#5A4634']} style={{ padding: 20, borderRadius: 28 }}>
+              {/* Title row */}
+              <View className="flex-row justify-between items-start mb-4">
+                <View className="flex-1 pr-3">
+                  <AppText size="lg" className="text-cream font-heading" numberOfLines={1}>Jaringan Keluarga</AppText>
+                  <AppText size="xs" className="text-cream/50 font-body mt-0.5">Lindungi satu sama lain</AppText>
+                </View>
+                <View className="bg-mustard/20 px-3 py-1.5 rounded-full flex-shrink-0">
                   <AppText size="xs" className="text-mustard font-display">{familyMembers.length} Anggota</AppText>
                 </View>
               </View>
 
-              <View className="flex-row justify-between items-center mb-4">
-                <View className="items-center">
-                  <AppText size="3xl" className="text-white font-display">{codeword.word ? '3' : '0'}/5</AppText>
-                  <AppText size="xs" className="text-cream/60 font-body mt-1">Hafal Codeword</AppText>
+              {/* Status row */}
+              <View className="flex-row items-center gap-3 mb-5">
+                <View className="flex-1 bg-cream/8 rounded-2xl p-3 items-center">
+                  <AppText size="2xl" className="text-olive font-display">Aman</AppText>
+                  <AppText size="xs" className="text-cream/60 font-body mt-0.5">Status</AppText>
                 </View>
-                <View className="w-[1px] h-10 bg-cream/20" />
-                <View className="items-center">
-                  <AppText size="3xl" className="text-olive font-display">Aman</AppText>
-                  <AppText size="xs" className="text-cream/60 font-body mt-1">Status Keamanan</AppText>
+                <View className="flex-1 bg-cream/8 rounded-2xl p-3 items-center">
+                  <AppText size="2xl" className="text-mustard font-display">{familyMembers.filter(m => m.verified).length}</AppText>
+                  <AppText size="xs" className="text-cream/60 font-body mt-0.5">Terverifikasi</AppText>
                 </View>
               </View>
 
-              <View className="flex-row gap-2 mt-2">
+              {/* Action buttons */}
+              <View className="flex-row gap-2">
                 <TouchableOpacity
                   onPress={handleInvite}
                   disabled={isLoadingContacts}
                   activeOpacity={0.8}
-                  className="flex-1 bg-mustard rounded-xl py-3 flex-row justify-center items-center gap-2"
+                  className="flex-1 bg-mustard rounded-xl py-3 flex-row justify-center items-center gap-1.5"
                 >
                   {isLoadingContacts ? (
                     <ActivityIndicator size="small" color="#3E2E22" />
                   ) : (
                     <>
-                      <PlusCircle color="#3E2E22" size={16} />
+                      <PlusCircle color="#3E2E22" size={15} />
                       <AppText size="xs" className="text-espresso font-display">Undang</AppText>
                     </>
                   )}
@@ -340,19 +352,19 @@ export default function KeluargaScreen() {
                     setTempSeed(familySecret);
                     setShowSeedModal(true);
                   }}
-                  className="flex-1 bg-olive rounded-xl py-3 flex-row justify-center items-center gap-2"
+                  className="flex-1 bg-olive rounded-xl py-3 flex-row justify-center items-center gap-1.5"
                 >
-                  <KeyRound color="#FFFFFF" size={16} />
+                  <KeyRound color="#FFFFFF" size={15} />
                   <AppText size="xs" className="text-white font-display">Ubah Seed</AppText>
                 </TouchableOpacity>
               </View>
             </LinearGradient>
-          </TouchableOpacity>
+          </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(200).springify()}>
           <DashboardAnak />
-          <AppText size="base" className="text-espresso font-heading mb-3">Daftar Anggota</AppText>
+          <AppText size="base" className="text-espresso font-heading mb-3 mt-1">Daftar Anggota</AppText>
         </Animated.View>
 
         {/* LIST KELUARGA */}
@@ -390,15 +402,23 @@ export default function KeluargaScreen() {
 
                 {isExpanded && (
                   <Animated.View entering={FadeIn} exiting={FadeOut} className="px-4 pb-4 pt-1 border-t border-espresso/5">
-                    <AppText size="xs" className="font-body text-text-muted mb-3">Status Codeword: {member.verified ? <AppText size="xs" className="text-olive font-bold">Terverifikasi</AppText> : <AppText size="xs" className="text-terracotta font-bold">Belum</AppText>}</AppText>
+                    <View className="flex-row items-center gap-2 mb-3">
+                      <AppText size="xs" className="font-body text-text-muted">Status Codeword:</AppText>
+                      {member.verified
+                        ? <AppText size="xs" className="text-olive font-bold">Terverifikasi ✓</AppText>
+                        : <AppText size="xs" className="text-terracotta font-bold">Belum Diverifikasi</AppText>
+                      }
+                    </View>
 
                     {!isMe && (
-                      <View className="flex-row gap-2">
-                        <TouchableOpacity className="flex-1 bg-terracotta/10 border border-terracotta/30 py-2 rounded-xl items-center flex-row justify-center gap-2">
-                          <BellRing color="#C1592E" size={14} />
-                          <AppText size="xs" className="text-terracotta font-display">Kirim Alarm Senyap</AppText>
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity
+                        activeOpacity={0.8}
+                        onPress={() => handleSilentAlarm(member.name)}
+                        className="bg-terracotta/10 border border-terracotta/30 py-2.5 px-4 rounded-xl items-center flex-row justify-center gap-2"
+                      >
+                        <BellRing color="#C1592E" size={14} />
+                        <AppText size="xs" className="text-terracotta font-display">Kirim Alarm Senyap</AppText>
+                      </TouchableOpacity>
                     )}
                   </Animated.View>
                 )}

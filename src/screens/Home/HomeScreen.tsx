@@ -44,11 +44,10 @@ const TODAY_IDX = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { user } = useAuth();
-  const { xp, level, levelName, codeword, familySecret, updateFamilySecret } = useUser();
+  const { xp, level, levelName, xpNextLevel, codeword, familySecret, updateFamilySecret } = useUser();
   const { isLansiaMode } = useLansia();
   const { showConfirm } = useConfirmModal();
   const userName = user?.name ? user.name.split(" ")[0] : "Pengguna";
-  const xpNextLevel = 2000;
   const xpPct = Math.min(100, Math.round((xp / xpNextLevel) * 100));
   const xpWidth = useSharedValue(0);
   const [familyMemberCount, setFamilyMemberCount] = React.useState(1);

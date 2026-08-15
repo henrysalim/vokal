@@ -4,6 +4,7 @@ import { Text as RNText, TextProps } from "react-native";
 export interface AppTextProps extends TextProps {
   className?: string;
   size?: "xs" | "sm" | "base" | "md" | "lg" | "xl" | "2xl" | "3xl";
+  disableLansiaScale?: boolean;
 }
 
 const fontScaleMap: Record<string, { normal: string; lansia: string }> = {
@@ -21,11 +22,12 @@ export const AppText: React.FC<AppTextProps> = ({
   size = "base",
   className = "",
   children,
+  disableLansiaScale = false,
   ...props
 }) => {
   const { isLansiaMode } = useLansia();
   const scale = fontScaleMap[size] || fontScaleMap.base;
-  const fontClass = isLansiaMode ? scale.lansia : scale.normal;
+  const fontClass = (isLansiaMode && !disableLansiaScale) ? scale.lansia : scale.normal;
 
   const cleanClassName = className
     .replace(/\btext-(xs|sm|base|md|lg|xl|2xl|3xl|4xl|5xl)\b/g, "")
