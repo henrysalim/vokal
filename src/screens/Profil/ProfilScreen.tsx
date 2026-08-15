@@ -69,14 +69,14 @@ export default function ProfilScreen() {
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-cream">
       <ScrollView
-        className="flex-1 px-5 pt-4"
-        contentContainerStyle={{ paddingBottom: 140 }}
+        className="flex-1"
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 140 }}
         showsVerticalScrollIndicator={false}
       >
         {/* HEADER PROFIL */}
         <Animated.View
           entering={FadeInDown.delay(100).springify()}
-          className="items-center mb-8 mt-4"
+          className="items-center mb-8 mt-2"
         >
           <View className="relative items-center justify-center mb-4">
             <Animated.View
@@ -91,7 +91,7 @@ export default function ProfilScreen() {
                   resizeMode="cover"
                 />
               ) : (
-                <AppText size="2xl" className="text-cream font-display">
+                <AppText size="2xl" className="text-cream font-display" disableLansiaScale>
                   {avatarInitials}
                 </AppText>
               )}
@@ -100,44 +100,33 @@ export default function ProfilScreen() {
               <Shield color="#FFFFFF" size={14} />
             </View>
           </View>
-          <AppText size="xl" className="font-heading text-espresso">
+          <AppText size="xl" className="font-heading text-espresso" numberOfLines={1}>
             {userName}
           </AppText>
-          <AppText size="sm" className="text-text-muted font-body">{levelName}</AppText>
+          <AppText size="sm" className="text-text-muted font-body" numberOfLines={1}>{levelName}</AppText>
         </Animated.View>
 
         {/* MODE LANSIA TOGGLE */}
         <Animated.View entering={FadeInDown.delay(200).springify()}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            className="rounded-2xl overflow-hidden mb-6 shadow-sm"
+          <View
+            className="bg-surface rounded-3xl p-4 shadow-sm mb-6 border border-mustard/30 flex-row items-center justify-between"
             style={{ elevation: 1 }}
           >
-            <LinearGradient
-              colors={["#FFFFFF", "#F0EAE0"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              className="p-4 flex-row items-center justify-between border border-mustard/20"
-            >
-              <View className="flex-1 pr-4">
-                <View className="flex-row items-center gap-2 mb-1">
-                  <AppText size="base" className="font-heading text-espresso">
-                    Mode Lansia
-                  </AppText>
-                </View>
-                <AppText size="sm" className="font-body text-text-muted leading-tight">
-                  Teks lebih besar, panduan suara aktif, dan layout lebih
-                  sederhana.
-                </AppText>
-              </View>
-              <Switch
-                trackColor={{ false: "#3E2E2220", true: "#E8A33D" }}
-                thumbColor={isLansiaMode ? "#FFFFFF" : "#F0EAE0"}
-                onValueChange={toggleLansiaMode}
-                value={isLansiaMode}
-              />
-            </LinearGradient>
-          </TouchableOpacity>
+            <View className="flex-1 pr-3">
+              <AppText size="base" className="font-heading text-espresso mb-1">
+                Mode Lansia
+              </AppText>
+              <AppText size="sm" className="font-body text-text-muted leading-snug">
+                Teks lebih besar dan antarmuka lebih sederhana.
+              </AppText>
+            </View>
+            <Switch
+              trackColor={{ false: "#3E2E2220", true: "#E8A33D" }}
+              thumbColor={isLansiaMode ? "#FFFFFF" : "#F0EAE0"}
+              onValueChange={toggleLansiaMode}
+              value={isLansiaMode}
+            />
+          </View>
         </Animated.View>
 
         {/* MENU SETTINGS */}

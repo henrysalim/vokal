@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View, ScrollView, TouchableOpacity, Modal, Dimensions,
-  Pressable, Platform,
+  Pressable, Platform, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,6 +14,7 @@ import {
   Trophy, Mic, Search, Shield, ChevronRight, X, Check,
   AlertCircle, Phone, RotateCcw, Award, ChevronLeft, Star,
   Heart, Zap, Lock, BookOpen, PlayCircle, CheckCircle2, Flame,
+  Clock,
 } from 'lucide-react-native';
 import { AppText } from '../../components/ui/AppText';
 import { useUser } from '../../context/UserContext';
@@ -24,7 +25,7 @@ import { SIM_SCENARIOS, SimScenario } from '../../data/simScamData';
 
 const { width, height } = Dimensions.get('window');
 
-type ModuleType = 'done' | 'active' | 'locked' | 'chest';
+type ModuleType = 'done' | 'active' | 'locked' | 'chest' | 'locked_lives';
 
 type Module = {
   id: string;
@@ -136,7 +137,7 @@ function QuizSession({
   questions: QuizQuestion[];
   lives: number;
   onClose: () => void;
-  onComplete: (xpEarned: number, correct: number) => void;
+  onComplete: (xpEarned: number, correct: number, livesLeft: number) => void;
   onReduceLife: () => void;
 }) {
   const [idx, setIdx] = useState(0);
@@ -218,7 +219,7 @@ function QuizSession({
           </AppText>
           <AppText size="sm" className="text-text-muted font-body text-center mb-6 leading-relaxed">
             Benar {correct} dari {questions.length} soal
-            {currentLives <= 0 ? '\nNyawa kamu habis di sesi ini.' : ''}
+            {currentLives <= 0 ? '\nNyawa kamu habis. Tunggu 5 menit untuk isi ulang.' : ''}
           </AppText>
 
           {/* Lives remaining */}
@@ -233,7 +234,7 @@ function QuizSession({
             <AppText size="xs" className="text-text-muted font-body mt-0.5">diperoleh dalam sesi ini</AppText>
           </View>
 
-          <TouchableOpacity className="w-full bg-espresso rounded-2xl py-4 items-center" onPress={() => onComplete(xpEarned, correct)} activeOpacity={0.85}>
+          <TouchableOpacity className="w-full bg-espresso rounded-2xl py-4 items-center" onPress={() => onComplete(xpEarned, correct, currentLives)} activeOpacity={0.85}>
             <AppText size="sm" className="text-white font-heading">Kembali ke Peta</AppText>
           </TouchableOpacity>
         </Animated.View>
@@ -326,7 +327,7 @@ function SimSession({
   scenario: SimScenario;
   lives: number;
   onClose: () => void;
-  onComplete: (xp: number) => void;
+  onComplete: (xp: number, livesLeft: number) => void;
   onReduceLife: () => void;
 }) {
   const [stepIdx, setStepIdx] = useState(0);
@@ -374,7 +375,10 @@ function SimSession({
           <AppText size="2xl" className="text-espresso font-heading text-center mb-2">
             {passed ? 'Skenario Berhasil!' : currentLives <= 0 ? 'Nyawa Habis!' : 'Coba Lagi'}
           </AppText>
-          <AppText size="xs" className="text-text-muted font-body text-center mb-5">{correctCount}/{scenario.steps.length} respons terbaik</AppText>
+          <AppText size="xs" className="text-text-muted font-body text-center mb-5">
+            {correctCount}/{scenario.steps.length} respons terbaik
+            {currentLives <= 0 ? '\nTunggu 5 menit untuk isi ulang nyawa.' : ''}
+          </AppText>
 
           <View className="flex-row gap-2 mb-5">
             {Array.from({ length: lives }).map((_, i) => (
@@ -385,7 +389,7 @@ function SimSession({
           <View className="bg-mustard/15 border border-mustard/30 rounded-2xl px-8 py-4 mb-8 items-center w-full">
             <AppText size="2xl" className="text-mustard font-display">+{xpEarned} XP</AppText>
           </View>
-          <TouchableOpacity className="w-full bg-espresso rounded-2xl py-4 items-center" onPress={() => onComplete(xpEarned)} activeOpacity={0.85}>
+          <TouchableOpacity className="w-full bg-espresso rounded-2xl py-4 items-center" onPress={() => onComplete(xpEarned, currentLives)} activeOpacity={0.85}>
             <AppText size="sm" className="text-white font-heading">Kembali ke Peta</AppText>
           </TouchableOpacity>
         </Animated.View>
@@ -466,16 +470,18 @@ function SimSession({
 }
 
 function PathNode({
-  mod, index, onPress, bounceAnim,
+  mod, index, onPress, bounceAnim, livesSecondsLeft,
 }: {
   mod: Module;
   index: number;
   onPress: () => void;
   bounceAnim?: any;
+  livesSecondsLeft: number;
 }) {
   const isDone = mod.type === 'done';
   const isActive = mod.type === 'active';
   const isLocked = mod.type === 'locked';
+  const isLockedLives = mod.type === 'locked_lives';
   const isChest = mod.type === 'chest';
 
   const animStyle = useAnimatedStyle(() => ({
@@ -490,21 +496,31 @@ function PathNode({
     ? mod.bgColor
     : isChest
     ? '#E8A33D'
+    : isLockedLives
+    ? '#8B3D1F'
     : '#D4C9BC';
 
   const borderCol = isDone
     ? mod.borderColor
     : isActive
     ? mod.borderColor
+    : isLockedLives
+    ? '#5A1F0F'
     : '#B5A898';
 
-  const shadowStyle = !isLocked ? {
+  const shadowStyle = (!isLocked && !isLockedLives) ? {
     shadowColor: nodeBg,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: isActive ? 0.55 : 0.3,
     shadowRadius: 0,
     elevation: isActive ? 8 : 4,
   } : {};
+
+  const formatSeconds = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
 
   return (
     <Animated.View
@@ -520,15 +536,23 @@ function PathNode({
       )}
 
       {/* XP badge */}
-      {!isLocked && !isDone && (
+      {!isLocked && !isLockedLives && !isDone && (
         <View className="absolute -top-1 -right-6 bg-mustard rounded-full px-2 py-0.5 z-10 border-2 border-cream">
           <AppText size="xs" className="text-espresso font-display" style={{ fontSize: 9 }}>+{mod.xpReward}</AppText>
         </View>
       )}
 
+      {/* Lives-locked countdown badge */}
+      {isLockedLives && livesSecondsLeft > 0 && (
+        <View className="absolute -top-2 -right-8 bg-terracotta rounded-full px-2 py-0.5 z-10 border-2 border-cream flex-row items-center gap-1">
+          <Clock color="#fff" size={8} />
+          <AppText size="xs" className="text-white font-display" style={{ fontSize: 9 }}>{formatSeconds(livesSecondsLeft)}</AppText>
+        </View>
+      )}
+
       <TouchableOpacity
         onPress={onPress}
-        disabled={isLocked}
+        disabled={isLocked || isLockedLives}
         activeOpacity={0.8}
         style={[{
           width: 80,
@@ -543,8 +567,8 @@ function PathNode({
       >
         {isDone ? (
           <Check color="#FFFFFF" size={32} strokeWidth={3} />
-        ) : isLocked ? (
-          <Lock color="#A39686" size={24} />
+        ) : isLocked || isLockedLives ? (
+          isLockedLives ? <Clock color="#fff" size={24} /> : <Lock color="#A39686" size={24} />
         ) : isChest ? (
           <Award color="#3E2E22" size={32} />
         ) : (
@@ -553,9 +577,9 @@ function PathNode({
       </TouchableOpacity>
 
       {/* Title below node */}
-      <View className="mt-2 items-center" style={{ maxWidth: 100 }}>
-        <AppText size="xs" className={`font-heading text-center ${isLocked ? 'text-text-muted' : 'text-espresso'}`} numberOfLines={1}>
-          {mod.title}
+      <View className="mt-2 items-center" style={{ maxWidth: 110 }}>
+        <AppText size="xs" className={`font-heading text-center ${isLocked ? 'text-text-muted' : isLockedLives ? 'text-terracotta' : 'text-espresso'}`} numberOfLines={2}>
+          {isLockedLives ? 'Isi Nyawa\nDulu' : mod.title}
         </AppText>
       </View>
     </Animated.View>
@@ -574,19 +598,23 @@ function LeaderboardMini({ leaderboard, loading }: { leaderboard: any[]; loading
     </View>
   );
   return (
-    <View className="gap-2">
+    <View className="gap-2.5">
       {leaderboard.slice(0, 5).map((entry, i) => {
         const medals = ['#E8A33D', '#C0C0C0', '#CD7F32'];
         return (
           <View key={`${entry.name}-${i}`} className={`flex-row items-center py-2.5 px-3 rounded-xl ${entry.isMe ? 'bg-mustard/15' : 'bg-surface/10'}`}>
-            <View className="w-6 items-center mr-2">
-              {i < 3 ? <Trophy color={medals[i]} size={14} fill={medals[i]} /> : <AppText size="xs" className="text-cream/50 font-display">#{entry.rank}</AppText>}
+            <View className="w-6 items-center flex-shrink-0 mr-1.5">
+              {i < 3 ? <Trophy color={medals[i]} size={14} fill={medals[i]} /> : <AppText size="xs" disableLansiaScale className="text-cream/50 font-display">#{entry.rank}</AppText>}
             </View>
-            <View className="w-8 h-8 rounded-full bg-surface/15 items-center justify-center mr-2">
-              <AppText size="xs" className={`font-display ${entry.isMe ? 'text-mustard' : 'text-cream'}`}>{entry.initials}</AppText>
+            <View className="w-8 h-8 rounded-full bg-surface/15 items-center justify-center flex-shrink-0 mr-2">
+              <AppText size="xs" disableLansiaScale className={`font-display ${entry.isMe ? 'text-mustard' : 'text-cream'}`}>{entry.initials}</AppText>
             </View>
-            <AppText size="sm" className={`flex-1 font-heading ${entry.isMe ? 'text-white' : 'text-cream'}`}>{entry.name}{entry.isMe ? ' (Kamu)' : ''}</AppText>
-            <AppText size="xs" className="font-display text-mustard">{entry.score.toLocaleString()} XP</AppText>
+            <AppText size="sm" className={`flex-1 font-heading ${entry.isMe ? 'text-white' : 'text-cream'}`} numberOfLines={1} ellipsizeMode="tail">
+              {entry.name}{entry.isMe ? ' (Kamu)' : ''}
+            </AppText>
+            <AppText size="xs" disableLansiaScale className="font-display text-mustard flex-shrink-0 ml-2" numberOfLines={1}>
+              {entry.score.toLocaleString()} XP
+            </AppText>
           </View>
         );
       })}
@@ -594,17 +622,32 @@ function LeaderboardMini({ leaderboard, loading }: { leaderboard: any[]; loading
   );
 }
 
+// Format countdown for display in hero card
+function formatCountdown(secs: number) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 export default function AkademiScreen() {
   const [showPath, setShowPath] = useState(false);
   const [selectedMod, setSelectedMod] = useState<Module | null>(null);
+  const [playingModuleId, setPlayingModuleId] = useState<string | null>(null);
   const [activeQuizCategory, setActiveQuizCategory] = useState<string | null>(null);
   const [activeSimId, setActiveSimId] = useState<string | null>(null);
   const [showQuiz, setShowQuiz] = useState(false);
   const [showSim, setShowSim] = useState(false);
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
 
-  const { xp, level, levelName, lives, leaderboard, isLoadingLeaderboard, addXP, reduceLife, resetLives, refreshLeaderboard } = useUser();
+  const {
+    xp, level, levelName, lives, livesRefillAt, livesSecondsLeft,
+    completedModuleIds,
+    leaderboard, isLoadingLeaderboard,
+    addXP, reduceLife, resetLives, markModuleComplete,
+    refreshLeaderboard,
+  } = useUser();
   const { user } = useAuth();
+
+  const completedSet = new Set(completedModuleIds);
 
   const bounceAnim = useSharedValue(0);
   React.useEffect(() => {
@@ -617,29 +660,50 @@ export default function AkademiScreen() {
   }, []);
 
   const modules: Module[] = BASE_MODULES.map((m, i) => {
-    const isDone = completedIds.has(m.id);
-    const prevDone = i === 0 || completedIds.has(BASE_MODULES[i - 1].id);
+    const isDone = completedSet.has(m.id);
+    const prevDone = i === 0 || completedSet.has(BASE_MODULES[i - 1].id);
     const isChest = m.icon === 'award';
-    const allPrevDone = BASE_MODULES.slice(0, i).every(pm => completedIds.has(pm.id));
+    const allPrevDone = BASE_MODULES.slice(0, i).every(pm => completedSet.has(pm.id));
     let type: ModuleType = 'locked';
     if (isDone) type = 'done';
     else if (isChest) type = allPrevDone ? 'chest' : 'locked';
-    else if (prevDone) type = 'active';
+    else if (prevDone) {
+      // If this module would be 'active' but lives are 0, mark as locked_lives
+      type = lives <= 0 ? 'locked_lives' : 'active';
+    }
     return { ...m, type };
   });
 
   const activeModIdx = modules.findIndex(m => m.type === 'active');
+  // The module the user is currently on (active or locked_lives)
+  const currentModIdx = modules.findIndex(m => m.type === 'active' || m.type === 'locked_lives');
 
   const xpNextLevel = level < 3 ? [500, 1500, 3000][level] : 9999;
   const xpPct = Math.min(100, Math.round((xp / xpNextLevel) * 100));
 
   const handleNodePress = (mod: Module) => {
     if (mod.type === 'locked') return;
+    if (mod.type === 'locked_lives') {
+      // Show lives cooldown info
+      Alert.alert(
+        '⏰ Nyawa Habis',
+        `Kamu kehabisan nyawa! Nyawa akan terisi ulang otomatis dalam ${formatCountdown(livesSecondsLeft)}.\n\nKamu hanya bisa melanjutkan dari stage ini setelah nyawa terisi.`,
+        [{ text: 'Mengerti', style: 'default' }],
+      );
+      return;
+    }
     setSelectedMod(mod);
   };
 
   const startModule = () => {
     if (!selectedMod) return;
+    if (lives <= 0) {
+      Alert.alert('Nyawa Habis', 'Tunggu nyawa terisi ulang untuk memulai latihan.');
+      setSelectedMod(null);
+      return;
+    }
+    const targetId = selectedMod.id;
+    setPlayingModuleId(targetId);
     setSelectedMod(null);
     setTimeout(() => {
       if (selectedMod.category) {
@@ -652,25 +716,33 @@ export default function AkademiScreen() {
     }, 300);
   };
 
-  const handleQuizComplete = (xpEarned: number, correct: number) => {
+  const handleQuizComplete = (xpEarned: number, correct: number, livesLeft: number) => {
     if (xpEarned > 0) addXP(xpEarned);
-    if (correct >= Math.ceil(5 / 2) && lives > 0 && selectedMod?.id) {
-      // Mark as done only if passed
-    }
-    if (activeModIdx >= 0) {
-      setCompletedIds(prev => new Set([...prev, modules[activeModIdx].id]));
+    // Only mark done if passed (at least half correct AND had lives remaining)
+    if (correct >= Math.ceil(5 / 2) && livesLeft > 0) {
+      if (playingModuleId) {
+        markModuleComplete(playingModuleId);
+      } else if (currentModIdx >= 0) {
+        markModuleComplete(modules[currentModIdx].id);
+      }
     }
     setShowQuiz(false);
     setActiveQuizCategory(null);
+    setPlayingModuleId(null);
   };
 
-  const handleSimComplete = (xpEarned: number) => {
+  const handleSimComplete = (xpEarned: number, livesLeft: number) => {
     if (xpEarned > 0) addXP(xpEarned);
-    if (activeModIdx >= 0) {
-      setCompletedIds(prev => new Set([...prev, modules[activeModIdx].id]));
+    if (livesLeft > 0) {
+      if (playingModuleId) {
+        markModuleComplete(playingModuleId);
+      } else if (currentModIdx >= 0) {
+        markModuleComplete(modules[currentModIdx].id);
+      }
     }
     setShowSim(false);
     setActiveSimId(null);
+    setPlayingModuleId(null);
   };
 
   const currentSim = activeSimId ? SIM_SCENARIOS.find(s => s.id === activeSimId) : null;
@@ -679,23 +751,23 @@ export default function AkademiScreen() {
   if (!showPath) {
     return (
       <SafeAreaView edges={['top']} className="flex-1 bg-cream">
-        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
 
           {/* HERO CARD */}
-          <View className="mx-5 mt-5 rounded-[28px] overflow-hidden" style={{ elevation: 8, shadowColor: '#3E2E22', shadowOpacity: 0.18, shadowOffset: { width: 0, height: 8 }, shadowRadius: 20 }}>
-            <LinearGradient colors={['#3E2E22', '#5A3E2B']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className="p-6">
+          <View className="mt-5 rounded-[28px] overflow-hidden" style={{ elevation: 8, shadowColor: '#3E2E22', shadowOpacity: 0.18, shadowOffset: { width: 0, height: 8 }, shadowRadius: 20 }}>
+            <LinearGradient colors={['#3E2E22', '#5A3E2B']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20, borderRadius: 28 }}>
               {/* Decorative circles */}
               <View style={{ position: 'absolute', top: -20, right: -20, width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(232,163,61,0.1)' }} />
               <View style={{ position: 'absolute', bottom: -30, left: -10, width: 90, height: 90, borderRadius: 45, backgroundColor: 'rgba(116,130,47,0.12)' }} />
 
-              <View className="flex-row items-center justify-between mb-4">
-                <View>
-                  <AppText size="xs" className="text-surface/50 font-body uppercase tracking-widest">Akademi VOKAL</AppText>
-                  <AppText size="2xl" className="text-white font-heading">{levelName}</AppText>
+              <View className="flex-row items-center justify-between mb-4 gap-2">
+                <View className="flex-1 pr-2">
+                  <AppText size="xs" className="text-surface/50 font-body uppercase tracking-widest" numberOfLines={1}>Akademi VOKAL</AppText>
+                  <AppText size="xl" className="text-white font-heading" numberOfLines={1}>{levelName}</AppText>
                 </View>
-                <View className="items-end">
-                  <AppText size="xs" className="text-surface/50 font-body mb-0.5">Total XP</AppText>
-                  <AppText size="2xl" className="text-mustard font-display">{xp.toLocaleString()}</AppText>
+                <View className="items-end flex-shrink-0">
+                  <AppText size="xs" className="text-surface/50 font-body mb-0.5" numberOfLines={1}>Total XP</AppText>
+                  <AppText size="xl" className="text-mustard font-display" numberOfLines={1} disableLansiaScale>{xp.toLocaleString()}</AppText>
                 </View>
               </View>
 
@@ -703,58 +775,74 @@ export default function AkademiScreen() {
               <View className="bg-surface/15 rounded-full h-2.5 overflow-hidden mb-1.5">
                 <View className="h-full bg-mustard rounded-full" style={{ width: `${xpPct}%` }} />
               </View>
-              <AppText size="xs" className="text-surface/40 font-body">{xp.toLocaleString()} / {xpNextLevel.toLocaleString()} XP</AppText>
+              <AppText size="xs" className="text-surface/40 font-body" numberOfLines={1}>{xp.toLocaleString()} / {xpNextLevel.toLocaleString()} XP</AppText>
 
               {/* Lives */}
-              <View className="flex-row items-center gap-3 mt-4">
-                <View className="flex-row gap-1.5">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Heart key={i} color="#C1592E" size={18} fill={i < lives ? '#C1592E' : 'transparent'} opacity={i < lives ? 1 : 0.3} />
-                  ))}
+              <View className="flex-row items-center justify-between gap-2 mt-4 flex-wrap">
+                <View className="flex-row items-center gap-2">
+                  <View className="flex-row gap-1.5 flex-shrink-0">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <Heart key={i} color="#C1592E" size={18} fill={i < lives ? '#C1592E' : 'transparent'} opacity={i < lives ? 1 : 0.3} />
+                    ))}
+                  </View>
+                  {lives > 0 ? (
+                    <AppText size="xs" className="text-surface/60 font-body" numberOfLines={1}>{lives} nyawa tersisa</AppText>
+                  ) : (
+                    <AppText size="xs" className="text-terracotta font-body" numberOfLines={1}>
+                      Isi ulang dalam {formatCountdown(livesSecondsLeft)}
+                    </AppText>
+                  )}
                 </View>
-                <AppText size="xs" className="text-surface/60 font-body">{lives} nyawa tersisa</AppText>
-                {lives < 3 && (
-                  <TouchableOpacity onPress={resetLives} className="ml-auto bg-mustard/20 rounded-full px-3 py-1">
+                {lives < 3 && lives > 0 && (
+                  <TouchableOpacity onPress={resetLives} className="bg-mustard/20 rounded-full px-3 py-1 flex-shrink-0">
                     <AppText size="xs" className="text-mustard font-display">Isi Ulang</AppText>
                   </TouchableOpacity>
                 )}
               </View>
 
               <TouchableOpacity
-                className="mt-5 bg-mustard rounded-2xl py-4 items-center flex-row justify-center gap-2"
-                style={{ borderBottomWidth: 4, borderColor: '#b07a28' }}
-                onPress={() => setShowPath(true)}
+                className="mt-5 bg-mustard rounded-2xl py-4 px-3 items-center flex-row justify-center gap-2"
+                style={{ borderBottomWidth: 4, borderColor: '#b07a28', opacity: lives <= 0 ? 0.6 : 1 }}
+                onPress={() => {
+                  if (lives <= 0) {
+                    Alert.alert('Nyawa Habis', `Nyawa akan terisi dalam ${formatCountdown(livesSecondsLeft)}.`);
+                    return;
+                  }
+                  setShowPath(true);
+                }}
                 activeOpacity={0.85}
               >
                 <PlayCircle color="#3E2E22" size={20} />
-                <AppText size="base" className="text-espresso font-heading">Mulai Perjalanan</AppText>
+                <AppText size="base" className="text-espresso font-heading" numberOfLines={1}>Mulai Perjalanan</AppText>
               </TouchableOpacity>
             </LinearGradient>
           </View>
 
           {/* STAT CARDS */}
-          <View className="flex-row gap-3 mx-5 mt-4">
+          <View className="flex-row gap-3 mt-4">
             {[
-              { label: 'Modul Selesai', value: `${completedIds.size}/${BASE_MODULES.length - 1}`, icon: <BookOpen color="#74822F" size={18} /> },
-              { label: 'Nyawa', value: `${lives}/3`, icon: <Heart color="#C1592E" size={18} fill={lives > 0 ? '#C1592E' : 'transparent'} /> },
+              { label: 'Modul Selesai', value: `${completedModuleIds.length}/${BASE_MODULES.length - 1}`, icon: <BookOpen color="#74822F" size={18} /> },
+              { label: 'Nyawa', value: lives <= 0 ? `⏰ ${formatCountdown(livesSecondsLeft)}` : `${lives}/3`, icon: <Heart color="#C1592E" size={18} fill={lives > 0 ? '#C1592E' : 'transparent'} /> },
             ].map((stat, i) => (
-              <View key={i} className="flex-1 bg-surface rounded-2xl p-4 border border-espresso/6" style={{ elevation: 1, shadowColor: '#3E2E22', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6 }}>
+              <View key={i} className="flex-1 bg-surface rounded-2xl p-4 border border-espresso/6 justify-between" style={{ elevation: 1, shadowColor: '#3E2E22', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 2 }, shadowRadius: 6 }}>
                 <View className="mb-2">{stat.icon}</View>
-                <AppText size="xl" className="text-espresso font-display">{stat.value}</AppText>
-                <AppText size="xs" className="text-text-muted font-body">{stat.label}</AppText>
+                <View>
+                  <AppText size="lg" className="text-espresso font-display" numberOfLines={1}>{stat.value}</AppText>
+                  <AppText size="xs" className="text-text-muted font-body mt-0.5" numberOfLines={1}>{stat.label}</AppText>
+                </View>
               </View>
             ))}
           </View>
 
           {/* LEADERBOARD */}
-          <View className="mx-5 mt-4 rounded-[24px] overflow-hidden" style={{ elevation: 4, shadowColor: '#3E2E22', shadowOpacity: 0.12, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12 }}>
-            <LinearGradient colors={['#2A1F17', '#3E2E22']} className="p-5">
-              <View className="flex-row items-center justify-between mb-4">
-                <View className="flex-row items-center gap-2">
+          <View className="mt-4 rounded-[24px] overflow-hidden" style={{ elevation: 4, shadowColor: '#3E2E22', shadowOpacity: 0.12, shadowOffset: { width: 0, height: 4 }, shadowRadius: 12 }}>
+            <LinearGradient colors={['#2A1F17', '#3E2E22']} style={{ padding: 20, borderRadius: 24 }}>
+              <View className="flex-row items-center justify-between mb-4 gap-2">
+                <View className="flex-row items-center gap-2 flex-1 pr-2">
                   <Trophy color="#E8A33D" size={20} />
-                  <AppText size="base" className="text-white font-heading">Papan Peringkat</AppText>
+                  <AppText size="base" className="text-white font-heading" numberOfLines={1}>Papan Peringkat</AppText>
                 </View>
-                <TouchableOpacity onPress={refreshLeaderboard} className="bg-surface/10 rounded-full px-3 py-1">
+                <TouchableOpacity onPress={refreshLeaderboard} className="bg-surface/10 rounded-full px-3 py-1 flex-shrink-0">
                   <AppText size="xs" className="text-surface/60 font-body">Perbarui</AppText>
                 </TouchableOpacity>
               </View>
@@ -770,7 +858,7 @@ export default function AkademiScreen() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
       {/* Path Header */}
-      <View className="flex-row items-center justify-between px-5 pt-4 pb-2">
+      <View className="flex-row items-center justify-between px-4 pt-4 pb-2">
         <TouchableOpacity onPress={() => setShowPath(false)} className="w-9 h-9 rounded-full bg-espresso/8 items-center justify-center">
           <ChevronLeft color="#3E2E22" size={22} />
         </TouchableOpacity>
@@ -781,6 +869,9 @@ export default function AkademiScreen() {
               <Heart key={i} color="#C1592E" size={18} fill={i < lives ? '#C1592E' : 'transparent'} opacity={i < lives ? 1 : 0.25} />
             ))}
           </View>
+          {lives <= 0 && (
+            <AppText size="xs" className="text-terracotta font-body">{formatCountdown(livesSecondsLeft)}</AppText>
+          )}
           {/* XP */}
           <View className="flex-row items-center bg-mustard/15 rounded-full px-3 py-1.5 gap-1.5">
             <Zap color="#E8A33D" size={13} fill="#E8A33D" />
@@ -794,35 +885,6 @@ export default function AkademiScreen() {
         contentContainerStyle={{ paddingBottom: 160, paddingTop: 60, alignItems: 'center' }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Connecting dashed lines */}
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center' }}>
-          {modules.map((mod, index) => {
-            if (index >= modules.length - 1) return null;
-            const offsetX = Math.sin(index * 1.4) * (width * 0.22);
-            const nextOffsetX = Math.sin((index + 1) * 1.4) * (width * 0.22);
-            const dx = nextOffsetX - offsetX;
-            const dy = 116;
-            const length = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-            const isDone = mod.type === 'done';
-            return (
-              <View
-                key={`line-${index}`}
-                style={{
-                  position: 'absolute',
-                  top: index * 116 + 100,
-                  transform: [{ translateX: (offsetX + nextOffsetX) / 2 }, { rotate: `${angle}deg` }],
-                  width: length,
-                  height: 5,
-                  borderBottomWidth: 5,
-                  borderStyle: 'dashed',
-                  borderColor: isDone ? '#74822F' : '#E0D5C8',
-                }}
-              />
-            );
-          })}
-        </View>
-
         {/* Nodes */}
         {modules.map((mod, index) => (
           <PathNode
@@ -831,6 +893,7 @@ export default function AkademiScreen() {
             index={index}
             onPress={() => handleNodePress(mod)}
             bounceAnim={bounceAnim}
+            livesSecondsLeft={livesSecondsLeft}
           />
         ))}
       </ScrollView>
@@ -853,6 +916,14 @@ export default function AkademiScreen() {
                   <AppText size="sm" className="text-mustard font-display">+{selectedMod?.xpReward} XP</AppText>
                 </View>
               </View>
+
+              {/* Lives warning if low */}
+              {lives === 1 && (
+                <View className="bg-terracotta/10 border border-terracotta/30 rounded-2xl p-3 mb-4 flex-row items-center gap-2">
+                  <AlertCircle color="#C1592E" size={16} />
+                  <AppText size="xs" className="text-terracotta font-body flex-1">Nyawa tersisa 1! Jika salah lagi, semua stage terkunci 5 menit.</AppText>
+                </View>
+              )}
 
               <TouchableOpacity
                 className="w-full bg-mustard rounded-2xl py-4 items-center"
