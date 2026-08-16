@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, ScrollView, TouchableOpacity, Modal, TextInput, Share, Alert, ActivityIndicator, FlatList, Linking, RefreshControl } from 'react-native';
+import { View, ScrollView, TouchableOpacity, Modal, TextInput, Share, ActivityIndicator, FlatList, Linking, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeIn, FadeOut, FadeInDown, Layout } from 'react-native-reanimated';
@@ -54,13 +54,13 @@ type FamilyMember = {
 export default function KeluargaScreen() {
   const { user } = useAuth();
   const currentUserName = user?.name || "Pengguna VOKAL";
-
+  const { familySecret, updateFamilySecret, codeword } = useUser();
+  const { showConfirm } = useConfirmModal();
 
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(() => [
     { id: user?.id || "my-user", name: `${user?.name || currentUserName} (Anda)`, role: "Admin", status: "Aman", verified: true }
   ]);
   const [refreshing, setRefreshing] = useState(false);
-
 
   const PENDING_STORAGE_KEY = user?.id ? `@vokal_pending_members_${user.id}` : "@vokal_pending_members_guest";
 
@@ -127,7 +127,7 @@ export default function KeluargaScreen() {
         .select("id, name, xp, avatar_initials")
         .eq("family_id", myFamilyId)
         .neq("id", user.id);
-      members = fallbackMembers;
+      members = (fallbackMembers as any) || null;
     }
 
     const otherMembers: FamilyMember[] = (members || []).map((m: any) => ({
@@ -172,9 +172,6 @@ export default function KeluargaScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'uninvited'>('all');
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
-
-  const { familySecret, updateFamilySecret, codeword } = useUser();
-  const { showConfirm } = useConfirmModal();
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -552,7 +549,14 @@ export default function KeluargaScreen() {
                         iconType: "info",
                         onConfirm: () => {
                           Linking.openURL(`tel:${displayPhone}`).catch(() => {
-                            Alert.alert("Gagal Telpon", "Format nomor tidak didukung di perangkat ini.");
+                            showConfirm({
+                              title: "Gagal Memanggil",
+                              message: "Format nomor tidak didukung di perangkat ini atau aplikasi telepon tidak tersedia.",
+                              confirmText: "Tutup",
+                              cancelText: "",
+                              variant: "terracotta",
+                              iconType: "danger",
+                            });
                           });
                         }
                       });

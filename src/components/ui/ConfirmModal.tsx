@@ -10,7 +10,7 @@ export type ConfirmOptions = {
   title: string;
   message: string;
   confirmText?: string;
-  cancelText?: string;
+  cancelText?: string | null;
   variant?: ConfirmVariant;
   iconType?: 'info' | 'success' | 'warning' | 'danger' | 'share' | 'question';
   onConfirm?: () => void;

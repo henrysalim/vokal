@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { User, Mail, Lock, Eye, EyeOff, ShieldCheck, Users, ChevronDown } from 'lucide-react-native';
@@ -38,15 +46,36 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!name || !email || !password) {
-      Alert.alert('Error', 'Semua kolom wajib diisi.');
+      showConfirm({
+        title: 'Data Belum Lengkap',
+        message: 'Semua kolom wajib diisi.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
       return;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Konfirmasi kata sandi tidak cocok.');
+      showConfirm({
+        title: 'Kata Sandi Tidak Cocok',
+        message: 'Konfirmasi kata sandi tidak cocok.',
+        confirmText: 'Perbaiki',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
       return;
     }
     if (password.length < 6) {
-      Alert.alert('Kata Sandi Terlalu Lemah', 'Kata sandi minimal harus 6 karakter.');
+      showConfirm({
+        title: 'Kata Sandi Terlalu Lemah',
+        message: 'Kata sandi minimal harus 6 karakter.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
       return;
     }
     if (showFamilyField && familyCode && familyCode.length !== 8) {
@@ -54,7 +83,7 @@ export default function RegisterScreen() {
         title: 'Kode Keluarga Tidak Valid',
         message: 'Kode keluarga harus terdiri dari 8 karakter alfanumerik.',
         confirmText: 'Mengerti',
-        cancelText: 'Batal',
+        cancelText: '',
         variant: 'terracotta',
         iconType: 'warning',
       });
@@ -65,7 +94,17 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-cream">
-      <ScrollView className="flex-1 px-5 pt-2" contentContainerStyle={{ paddingBottom: 50 }} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <ScrollView
+          className="flex-1 px-5 pt-2"
+          contentContainerStyle={{ paddingBottom: 50 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
 
         {/* HEADER AREA */}
         <Animated.View entering={FadeInDown.delay(100).springify()} className="items-center mb-6">
@@ -258,8 +297,8 @@ export default function RegisterScreen() {
           </TouchableOpacity>
 
         </Animated.View>
-
       </ScrollView>
-    </SafeAreaView>
-  );
+    </KeyboardAvoidingView>
+  </SafeAreaView>
+);
 }

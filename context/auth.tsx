@@ -1,10 +1,10 @@
 
 import React, { createContext, useCallback, useContext, useState, useEffect } from 'react';
-import { Alert } from 'react-native';
 import { supabase, isSupabaseConfigured } from '../src/lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import { useConfirmModal } from '../src/components/ui/ConfirmModal';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -34,6 +34,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { showConfirm } = useConfirmModal();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isOnboarded, setIsOnboarded] = useState(false);
@@ -55,12 +56,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const phone = profile?.phone || cachedPhone || null;
 
       if (!profile) {
-        await supabase.from('profiles').upsert({
-          id: userId,
-          email: defaultEmail,
-          name: name,
-          avatar_initials: initials,
-        }).catch(() => {});
+        try {
+          await supabase.from('profiles').upsert({
+            id: userId,
+            email: defaultEmail,
+            name: name,
+            avatar_initials: initials,
+          });
+        } catch {}
       }
 
       setUser({
@@ -143,7 +146,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const cleanName = newName.trim();
       const cleanPhone = newPhone !== undefined ? (newPhone ? newPhone.trim() : null) : (user?.phone || null);
       if (!cleanName || !user) {
-        Alert.alert('Error', 'Nama tidak boleh kosong.');
+        showConfirm({
+          title: 'Nama Tidak Boleh Kosong',
+          message: 'Silakan masukkan nama lengkap Anda.',
+          confirmText: 'Mengerti',
+          cancelText: '',
+          variant: 'terracotta',
+          iconType: 'warning',
+        });
         return false;
       }
 
@@ -192,7 +202,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (error) {
-            Alert.alert('Gagal Memperbarui Profil', error.message);
+            showConfirm({
+              title: 'Gagal Memperbarui Profil',
+              message: error.message,
+              confirmText: 'Tutup',
+              cancelText: '',
+              variant: 'terracotta',
+              iconType: 'danger',
+            });
             return false;
           }
         }
@@ -208,13 +225,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true;
       } catch (error: any) {
         console.error('Error updating profile:', error);
-        Alert.alert('Error', 'Terjadi kesalahan saat memperbarui profil');
+        showConfirm({
+          title: 'Terjadi Kesalahan',
+          message: 'Terjadi kesalahan saat memperbarui profil.',
+          confirmText: 'Tutup',
+          cancelText: '',
+          variant: 'terracotta',
+          iconType: 'danger',
+        });
         return false;
       } finally {
         setIsLoading(false);
       }
     },
-    [user]
+    [user, showConfirm]
   );
 
   useEffect(() => {
@@ -265,7 +289,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (error) {
-          Alert.alert('Gagal Google Login', error.message);
+          showConfirm({
+            title: 'Gagal Masuk dengan Google',
+            message: error.message,
+            confirmText: 'Tutup',
+            cancelText: '',
+            variant: 'terracotta',
+            iconType: 'danger',
+          });
           return;
         }
 
@@ -297,7 +328,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               });
 
               if (sessionError) {
-                Alert.alert('Gagal Mengaitkan Sesi Google', sessionError.message);
+                showConfirm({
+                  title: 'Gagal Mengaitkan Sesi Google',
+                  message: sessionError.message,
+                  confirmText: 'Tutup',
+                  cancelText: '',
+                  variant: 'terracotta',
+                  iconType: 'danger',
+                });
               } else {
                 setIsOnboarded(true);
 
@@ -316,7 +354,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
               }
             } else {
-              Alert.alert('Gagal Login', 'Token otentikasi Google tidak ditemukan dalam respon.');
+              showConfirm({
+                title: 'Gagal Masuk',
+                message: 'Token otentikasi Google tidak ditemukan dalam respon.',
+                confirmText: 'Tutup',
+                cancelText: '',
+                variant: 'terracotta',
+                iconType: 'danger',
+              });
             }
           }
         }
@@ -332,18 +377,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsOnboarded(true);
       }
     } catch (err: any) {
-      Alert.alert('Error Google Login', err.message || 'Terjadi kesalahan sistem.');
+      showConfirm({
+        title: 'Error Masuk Google',
+        message: err.message || 'Terjadi kesalahan sistem.',
+        confirmText: 'Tutup',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'danger',
+      });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showConfirm]);
 
   const signInWithEmail = useCallback(async (emailInput: string, passwordInput: string): Promise<boolean> => {
     const cleanEmail = emailInput.trim().toLowerCase();
     const cleanPassword = passwordInput.trim();
 
     if (!cleanEmail || !cleanPassword) {
-      Alert.alert('Error', 'Email dan kata sandi wajib diisi.');
+      showConfirm({
+        title: 'Data Belum Lengkap',
+        message: 'Email dan kata sandi wajib diisi.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
       return false;
     }
 
@@ -356,7 +415,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (error) {
-          Alert.alert('Gagal Masuk', error.message);
+          showConfirm({
+            title: 'Gagal Masuk',
+            message: error.message,
+            confirmText: 'Tutup',
+            cancelText: '',
+            variant: 'terracotta',
+            iconType: 'danger',
+          });
           return false;
         }
 
@@ -380,17 +446,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsOnboarded(true);
           return true;
         } else {
-          Alert.alert(
-            'Gagal Masuk',
-            'Pastikan format email benar dan kata sandi minimal 3 karakter.'
-          );
+          showConfirm({
+            title: 'Gagal Masuk',
+            message: 'Pastikan format email benar dan kata sandi minimal 3 karakter.',
+            confirmText: 'Mengerti',
+            cancelText: '',
+            variant: 'terracotta',
+            iconType: 'warning',
+          });
           return false;
         }
       }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showConfirm]);
 
   const signUpWithEmail = useCallback(
     async (nameInput: string, emailInput: string, passwordInput: string, familyCode?: string): Promise<boolean> => {
@@ -400,7 +470,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const cleanFamilyCode = familyCode?.trim().toUpperCase() || null;
 
       if (!cleanName || !cleanEmail || !cleanPassword) {
-        Alert.alert('Error', 'Semua kolom wajib diisi.');
+        showConfirm({
+          title: 'Data Belum Lengkap',
+          message: 'Semua kolom wajib diisi.',
+          confirmText: 'Mengerti',
+          cancelText: '',
+          variant: 'terracotta',
+          iconType: 'warning',
+        });
         return false;
       }
       setIsLoading(true);
@@ -415,7 +492,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
 
           if (error) {
-            Alert.alert('Gagal Mendaftar', error.message);
+            showConfirm({
+              title: 'Gagal Mendaftar',
+              message: error.message,
+              confirmText: 'Tutup',
+              cancelText: '',
+              variant: 'terracotta',
+              iconType: 'danger',
+            });
             return false;
           }
 
@@ -474,13 +558,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return true;
         }
       } catch (err: any) {
-        Alert.alert('Error Pendaftaran', err.message || 'Terjadi kesalahan sistem.');
+        showConfirm({
+          title: 'Error Pendaftaran',
+          message: err.message || 'Terjadi kesalahan sistem.',
+          confirmText: 'Tutup',
+          cancelText: '',
+          variant: 'terracotta',
+          iconType: 'danger',
+        });
         return false;
       } finally {
         setIsLoading(false);
       }
     },
-    [],
+    [showConfirm],
   );
 
   const signUpWithGoogle = useCallback(async () => {

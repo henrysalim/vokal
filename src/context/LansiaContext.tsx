@@ -48,7 +48,7 @@ export function LansiaProvider({ children }: { children: ReactNode }) {
 export function useLansia() {
   const context = useContext(LansiaContext);
   if (context === undefined) {
-    throw new Error("useLansia harus digunakan dalam LansiaProvider");
+    return { isLansiaMode: false, toggleLansiaMode: () => {} };
   }
   return context;
 }

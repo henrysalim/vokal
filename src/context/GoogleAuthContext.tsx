@@ -13,10 +13,10 @@
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { useConfirmModal } from '../components/ui/ConfirmModal';
 
 type GoogleAuthContextValue = {
   /** Apakah sudah terhubung ke Gmail */
@@ -43,6 +43,7 @@ const GoogleAuthContext = createContext<GoogleAuthContextValue | null>(null);
 const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
 export function GoogleAuthProvider({ children }: { children: React.ReactNode }) {
+  const { showConfirm } = useConfirmModal();
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(null);
   const [googleUserEmail, setGoogleUserEmail] = useState<string | null>(null);
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
@@ -111,17 +112,28 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
     setIsConnecting(true);
     try {
       if (!isSupabaseConfigured()) {
-        Alert.alert('Konfigurasi Belum Lengkap', 'Supabase belum dikonfigurasi.');
+        showConfirm({
+          title: 'Konfigurasi Belum Lengkap',
+          message: 'Supabase belum dikonfigurasi.',
+          confirmText: 'Mengerti',
+          cancelText: '',
+          variant: 'terracotta',
+          iconType: 'warning',
+        });
         return null;
       }
 
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session?.user) {
-        Alert.alert(
-          'Belum Login',
-          'Silakan login terlebih dahulu untuk menggunakan fitur ini.'
-        );
+        showConfirm({
+          title: 'Belum Masuk',
+          message: 'Silakan masuk terlebih dahulu untuk menggunakan fitur ini.',
+          confirmText: 'Mengerti',
+          cancelText: '',
+          variant: 'mustard',
+          iconType: 'warning',
+        });
         return null;
       }
 
@@ -218,12 +230,19 @@ export function GoogleAuthProvider({ children }: { children: React.ReactNode }) 
       }
       return null;
     } catch (err: any) {
-      Alert.alert('Gagal Otorisasi Gmail', err.message || 'Gagal mengambil akses Gmail.');
+      showConfirm({
+        title: 'Gagal Otorisasi Gmail',
+        message: err.message || 'Gagal mengambil akses Gmail.',
+        confirmText: 'Tutup',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'danger',
+      });
       return null;
     } finally {
       setIsConnecting(false);
     }
-  }, []);
+  }, [showConfirm]);
 
   const disconnectGoogle = useCallback(async () => {
     await clearStoredToken();

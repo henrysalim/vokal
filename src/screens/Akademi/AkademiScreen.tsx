@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, ScrollView, TouchableOpacity, Modal, Dimensions,
-  Pressable, Platform, Alert,
+  Pressable, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,6 +17,7 @@ import {
   Clock,
 } from 'lucide-react-native';
 import { AppText } from '../../components/ui/AppText';
+import { useConfirmModal } from '../../components/ui/ConfirmModal';
 import { useUser } from '../../context/UserContext';
 import { useAuth } from '../../../context/auth';
 import VokalMascot from '../../components/Mascot';
@@ -630,6 +631,7 @@ function formatCountdown(secs: number) {
 }
 
 export default function AkademiScreen() {
+  const { showConfirm } = useConfirmModal();
   const [showPath, setShowPath] = useState(false);
   const [selectedMod, setSelectedMod] = useState<Module | null>(null);
   const [playingModuleId, setPlayingModuleId] = useState<string | null>(null);
@@ -685,11 +687,14 @@ export default function AkademiScreen() {
     if (mod.type === 'locked') return;
     if (mod.type === 'locked_lives') {
       // Show lives cooldown info
-      Alert.alert(
-        '⏰ Nyawa Habis',
-        `Kamu kehabisan nyawa! Nyawa akan terisi ulang otomatis dalam ${formatCountdown(livesSecondsLeft)}.\n\nKamu hanya bisa melanjutkan dari stage ini setelah nyawa terisi.`,
-        [{ text: 'Mengerti', style: 'default' }],
-      );
+      showConfirm({
+        title: 'Nyawa Habis',
+        message: `Kamu kehabisan nyawa! Nyawa akan terisi ulang otomatis dalam ${formatCountdown(livesSecondsLeft)}.\n\nKamu hanya bisa melanjutkan dari stage ini setelah nyawa terisi.`,
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
       return;
     }
     setSelectedMod(mod);
@@ -698,7 +703,14 @@ export default function AkademiScreen() {
   const startModule = () => {
     if (!selectedMod) return;
     if (lives <= 0) {
-      Alert.alert('Nyawa Habis', 'Tunggu nyawa terisi ulang untuk memulai latihan.');
+      showConfirm({
+        title: 'Nyawa Habis',
+        message: 'Tunggu nyawa terisi ulang untuk memulai latihan.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
       setSelectedMod(null);
       return;
     }
@@ -805,7 +817,14 @@ export default function AkademiScreen() {
                 style={{ borderBottomWidth: 4, borderColor: '#b07a28', opacity: lives <= 0 ? 0.6 : 1 }}
                 onPress={() => {
                   if (lives <= 0) {
-                    Alert.alert('Nyawa Habis', `Nyawa akan terisi dalam ${formatCountdown(livesSecondsLeft)}.`);
+                    showConfirm({
+                      title: 'Nyawa Habis',
+                      message: `Nyawa akan terisi otomatis dalam ${formatCountdown(livesSecondsLeft)}.`,
+                      confirmText: 'Mengerti',
+                      cancelText: '',
+                      variant: 'terracotta',
+                      iconType: 'warning',
+                    });
                     return;
                   }
                   setShowPath(true);

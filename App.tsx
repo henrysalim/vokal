@@ -251,12 +251,12 @@ export default function App() {
   }
 
   return (
-    <AuthProvider>
-      <GoogleAuthProvider>
-        <UserProvider>
-          <LansiaProvider>
-            <ScamProvider>
-              <ConfirmModalProvider>
+    <LansiaProvider>
+      <ConfirmModalProvider>
+        <AuthProvider>
+          <GoogleAuthProvider>
+            <UserProvider>
+              <ScamProvider>
                 <View
                   style={{ flex: 1, backgroundColor: "#F0EAE0" }}
                   onLayout={onLayoutRootView}
@@ -265,11 +265,11 @@ export default function App() {
                     <MainNavigator />
                   </NavigationContainer>
                 </View>
-              </ConfirmModalProvider>
-            </ScamProvider>
-          </LansiaProvider>
-        </UserProvider>
-      </GoogleAuthProvider>
-    </AuthProvider>
+              </ScamProvider>
+            </UserProvider>
+          </GoogleAuthProvider>
+        </AuthProvider>
+      </ConfirmModalProvider>
+    </LansiaProvider>
   );
 }
