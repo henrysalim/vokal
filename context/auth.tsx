@@ -169,12 +169,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const avatarUrlToSave = newAvatarUrl !== undefined ? newAvatarUrl : user.avatarUrl;
         const phoneToSave = cleanPhone;
 
-        // 1. Simpan ke local cache AsyncStorage terlebih dahulu
         if (phoneToSave !== undefined) {
           await AsyncStorage.setItem(`@vokal_user_phone_${user.id}`, phoneToSave || '').catch(() => {});
         }
 
-        // 2. Simpan ke Supabase DB
         if (isSupabaseConfigured()) {
           let { error } = await supabase
             .from('profiles')
@@ -187,7 +185,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               email: user.email,
             });
 
-          // Jika kolom phone belum dibuat di Supabase, lakukan fallback tanpa kolom phone
           if (error && error.message && error.message.includes('phone')) {
             const res = await supabase
               .from('profiles')
@@ -279,7 +276,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           options: {
             redirectTo: redirectUrl,
             skipBrowserRedirect: true,
-            // Minta scope Gmail agar provider_token bisa akses Gmail API
             scopes: 'openid email profile https://www.googleapis.com/auth/gmail.readonly',
             queryParams: {
               access_type: 'offline',
@@ -339,7 +335,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               } else {
                 setIsOnboarded(true);
 
-                // Simpan provider_token (Google access token) ke profiles untuk Gmail API
                 const finalProviderToken = providerToken || sessionData?.session?.provider_token;
                 if (finalProviderToken && sessionData?.session?.user?.id) {
                   const oneMonthLater = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -514,7 +509,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (signInData?.user) {
               await fetchUserProfile(signInData.user.id, cleanEmail, cleanName);
 
-              // --- Family Code: link ke keluarga yang sudah ada ---
               if (cleanFamilyCode) {
                 const { data: otherProfiles } = await supabase
                   .from("profiles")

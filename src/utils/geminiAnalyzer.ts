@@ -1,20 +1,13 @@
-/**
- * geminiAnalyzer.ts
- * =================
- * Client utility untuk memanggil Supabase Edge Function vokal-analyze.
- * API key Gemini TIDAK pernah ada di client — semuanya ada di server Edge Function.
- */
+import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || "";
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/vokal-analyze`;
 
 export type GeminiAnalysisFlag = {
   id: string;
   label: string;
   description: string;
-  level: 'danger' | 'warning' | 'info';
+  level: "danger" | "warning" | "info";
 };
 
 export type GeminiAnalysisResult = {
@@ -26,13 +19,13 @@ export type GeminiAnalysisResult = {
 };
 
 type TextAnalysisParams = {
-  type: 'text';
+  type: "text";
   content: string;
-  analysisType?: 'email' | 'message';
+  analysisType?: "email" | "message";
 };
 
 type VoiceAnalysisParams = {
-  type: 'voice';
+  type: "voice";
   dspFeatures: {
     rhythmicRegularity: number;
     prosodyVariance: number;
@@ -45,40 +38,44 @@ type VoiceAnalysisParams = {
 
 type AnalysisParams = TextAnalysisParams | VoiceAnalysisParams;
 
-/**
- * Kirim analisis ke Gemini via Supabase Edge Function.
- * Membutuhkan Supabase session yang valid (anon key di header).
- */
-export async function analyzeWithGemini(params: AnalysisParams): Promise<GeminiAnalysisResult> {
+export async function analyzeWithGemini(
+  params: AnalysisParams,
+): Promise<GeminiAnalysisResult> {
   if (!isSupabaseConfigured() || !SUPABASE_URL) {
-    throw new Error('Supabase belum dikonfigurasi.');
+    throw new Error("Supabase belum dikonfigurasi.");
   }
 
-  // Dapatkan Supabase auth token (bisa null untuk anon access)
-  const { data: { session } } = await supabase.auth.getSession();
-  const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || "";
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'apikey': anonKey,
+    "Content-Type": "application/json",
+    apikey: anonKey,
   };
 
   if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
+    headers["Authorization"] = `Bearer ${session.access_token}`;
   } else {
-    headers['Authorization'] = `Bearer ${anonKey}`;
+    headers["Authorization"] = `Bearer ${anonKey}`;
   }
 
-  const body = params.type === 'text'
-    ? { type: 'text', content: params.content, analysisType: params.analysisType || 'message' }
-    : { type: 'voice', dspFeatures: params.dspFeatures };
+  const body =
+    params.type === "text"
+      ? {
+          type: "text",
+          content: params.content,
+          analysisType: params.analysisType || "message",
+        }
+      : { type: "voice", dspFeatures: params.dspFeatures };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000); // 20 detik timeout
+  const timeout = setTimeout(() => controller.abort(), 20000);
 
   try {
     const res = await fetch(EDGE_FUNCTION_URL, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: JSON.stringify(body),
       signal: controller.signal,
@@ -99,25 +96,25 @@ export async function analyzeWithGemini(params: AnalysisParams): Promise<GeminiA
 
     return {
       score: data.score ?? 0,
-      verdict: data.verdict ?? 'TIDAK DIKETAHUI',
-      summary: data.summary ?? '',
+      verdict: data.verdict ?? "TIDAK DIKETAHUI",
+      summary: data.summary ?? "",
       flags: data.flags ?? [],
       isGemini: true,
     };
   } catch (err: unknown) {
     clearTimeout(timeout);
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Analisis Gemini timeout. Periksa koneksi internet dan coba lagi.');
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(
+        "Analisis Gemini timeout. Periksa koneksi internet dan coba lagi.",
+      );
     }
     throw err;
   }
 }
 
-/**
- * Versi aman yang tidak throw — cocok untuk UI yang membutuhkan fallback.
- * Mengembalikan null jika gagal.
- */
-export async function safeAnalyzeWithGemini(params: AnalysisParams): Promise<GeminiAnalysisResult | null> {
+export async function safeAnalyzeWithGemini(
+  params: AnalysisParams,
+): Promise<GeminiAnalysisResult | null> {
   try {
     return await analyzeWithGemini(params);
   } catch {

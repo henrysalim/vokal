@@ -2,18 +2,18 @@
 
 export const Colors = {
 
-  espresso:     '#1A1512', // Anchor dark — headers, primary buttons, nav icons
-  mustard:      '#F5BE4E', // Hero accent — FAB, CTAs, selected day chips
-  mustardSoft:  '#F6CC6A', // Lighter hero card fills
-  terracotta:   '#C1592E', // Secondary accent — tags, secondary buttons
-  rose:         '#EFD4CF', // Pastel card fill — quick action cards
-  lavender:     '#DFD9FC', // Pastel card fill — quick action cards
-  taupe:        '#CFC5BA', // Muted secondary panel / collapsed tab
-  olive:        '#74822F', // Tertiary accent + "verified / safe" semantic
-  cream:        '#DEDADA', // Default app / screen background
-  surface:      '#FFFFFF', // Card surface on cream
-  textMuted:    '#6E5751', // Secondary text — warm grey-brown
-  warning:      '#7A2E28', // High-risk / suspicious-call state only
+  espresso:     '#1A1512',
+  mustard:      '#F5BE4E', 
+  mustardSoft:  '#F6CC6A', 
+  terracotta:   '#C1592E', 
+  rose:         '#EFD4CF', 
+  lavender:     '#DFD9FC',
+  taupe:        '#CFC5BA',
+  olive:        '#74822F',
+  cream:        '#DEDADA',
+  surface:      '#FFFFFF',
+  textMuted:    '#6E5751',
+  warning:      '#7A2E28',
 
   light: {
     background: '#DEDADA',
@@ -35,8 +35,8 @@ export const Colors = {
 
 export const Typography = {
 
-  heading: 'System', // Replace with Nunito or Plus Jakarta Sans
-  body:    'System', // Replace with Inter
+  heading: 'System',
+  body:    'System',
 
   xs:   11,
   sm:   13,

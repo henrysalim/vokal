@@ -11,7 +11,6 @@ export type LeaderboardEntry = {
   isMe: boolean;
 };
 
-// 5 minutes in ms
 const LIVES_COOLDOWN_MS = 5 * 60 * 1000;
 
 type UserContextType = {
@@ -20,8 +19,8 @@ type UserContextType = {
   levelName: string;
   xpNextLevel: number;
   lives: number;
-  livesRefillAt: number | null; // timestamp ms when lives will refill
-  livesSecondsLeft: number;     // countdown seconds
+  livesRefillAt: number | null;
+  livesSecondsLeft: number;    
   completedModuleIds: string[];
   leaderboard: LeaderboardEntry[];
   isLoadingLeaderboard: boolean;
@@ -48,13 +47,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [codeword, setCodeword] = useState({ word: 'MEMUAT...', expiresInHours: 6, hash: '0x00000000' });
   const [familySecret, setFamilySecret] = useState('VOKAL_DEFAULT_SECRET');
 
-  // ──────────────────────────────────────────────────────────
-  // Load profile data on auth state change
-  // ──────────────────────────────────────────────────────────
   const loadProfile = async (userId: string) => {
     let localXp = 0;
 
-    // 1. Load cached XP, completed modules, and family secret from AsyncStorage first
     try {
       const cachedXp = await AsyncStorage.getItem(`vokal_xp_${userId}`);
       if (cachedXp !== null) {
@@ -75,12 +70,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setFamilySecret(cachedSecret);
       }
     } catch {
-      // silent fallback
     }
 
     if (!isSupabaseConfigured()) return;
-
-    // 2. Fetch from Supabase
     const { data } = await supabase
       .from('profiles')
       .select('xp, completed_module_ids, lives, lives_refill_at, family_id, families(family_secret)')
@@ -89,7 +81,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     if (!data) return;
 
-    // Merge XP: take higher of local cache or Supabase to prevent regression
     const dbXp = typeof data.xp === 'number' ? data.xp : 0;
     const maxXp = Math.max(localXp, dbXp);
     setXp(maxXp);
@@ -99,7 +90,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       supabase.from('profiles').update({ xp: maxXp }).eq('id', userId);
     }
 
-    // Completed modules: merge Supabase & local cache
     if (Array.isArray(data.completed_module_ids)) {
       setCompletedModuleIds(prev => {
         const merged = Array.from(new Set([...prev, ...data.completed_module_ids]));
@@ -108,7 +98,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    // Lives with cooldown check
     const refillAt: number | null = data.lives_refill_at ? new Date(data.lives_refill_at).getTime() : null;
     const storedLives: number = typeof data.lives === 'number' ? data.lives : 3;
 
@@ -121,7 +110,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLivesRefillAt(refillAt);
     }
 
-    // Family secret extraction
     const famSecret = (data.families as any)?.family_secret || (data as any).family_secret;
     if (famSecret) {
       setFamilySecret(famSecret);
@@ -144,7 +132,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         loadProfile(session.user.id);
         refreshLeaderboard();
       } else {
-        // Reset on logout
         setXp(0);
         setLives(3);
         setLivesRefillAt(null);
@@ -155,9 +142,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // ──────────────────────────────────────────────────────────
-  // Countdown timer for lives refill
-  // ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!livesRefillAt || lives > 0) {
       setLivesSecondsLeft(0);
@@ -169,10 +153,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLivesSecondsLeft(remaining);
 
       if (remaining <= 0) {
-        // Restore lives when cooldown ends
         setLives(3);
         setLivesRefillAt(null);
-        // Persist to Supabase
         supabase.auth.getSession().then(({ data: { session } }) => {
           if (session?.user) {
             supabase.from('profiles').update({ lives: 3, lives_refill_at: null }).eq('id', session.user.id);
@@ -186,9 +168,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(interval);
   }, [livesRefillAt, lives]);
 
-  // ──────────────────────────────────────────────────────────
-  // Codeword generation
-  // ──────────────────────────────────────────────────────────
   useEffect(() => {
     import('../utils/totp').then(({ generateCodeword }) => {
       generateCodeword(familySecret, 6).then(result => {
@@ -197,9 +176,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     });
   }, [familySecret]);
 
-  // ──────────────────────────────────────────────────────────
-  // Leaderboard
-  // ──────────────────────────────────────────────────────────
   const refreshLeaderboard = async () => {
     if (!isSupabaseConfigured()) return;
     setIsLoadingLeaderboard(true);
@@ -238,30 +214,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch {
-      // silently fail
     } finally {
       setIsLoadingLeaderboard(false);
     }
   };
-
-  // ──────────────────────────────────────────────────────────
-  // Level computation
-  // ──────────────────────────────────────────────────────────
   const currentLevelInfo = LEVELS.slice().reverse().find(l => xp >= l.minXP) || LEVELS[0];
   const level = currentLevelInfo.id;
   const levelName = currentLevelInfo.name;
   const nextLevelObj = LEVELS.find(l => l.minXP > xp) || { minXP: 3000 };
   const xpNextLevel = nextLevelObj.minXP;
 
-  // ──────────────────────────────────────────────────────────
-  // Actions
-  // ──────────────────────────────────────────────────────────
   const addXP = (amount: number) => {
     if (amount <= 0) return;
     setXp(prev => {
       const newXp = prev + amount;
 
-      // 1. Save to AsyncStorage
       supabase.auth.getSession().then(({ data: { session } }) => {
         const userId = session?.user?.id;
         if (userId) {
@@ -344,7 +311,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     if (!isSupabaseConfigured() || !userId) return;
 
-    // 1. Cari di tabel families apakah seed ini sudah ada
     let { data: existingFam } = await supabase
       .from("families")
       .select("id")
@@ -352,7 +318,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (!existingFam) {
-      // 2. Jika belum ada, buat entri keluarga baru di tabel families
       const { data: newFam } = await supabase
         .from("families")
         .insert([{ name: "Keluarga VOKAL", family_secret: cleanSecret }])
@@ -362,7 +327,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
 
     if (existingFam?.id) {
-      // 3. Update profiles user saat ini dengan family_id keluarga tersebut
       let { error } = await supabase
         .from("profiles")
         .update({ family_id: existingFam.id, family_secret: cleanSecret })

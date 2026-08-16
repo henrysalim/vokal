@@ -52,7 +52,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const xpWidth = useSharedValue(0);
   const [familyMemberCount, setFamilyMemberCount] = React.useState(1);
 
-  // Load jumlah anggota keluarga dari Supabase
   React.useEffect(() => {
     if (!isSupabaseConfigured() || !user?.id) return;
     supabase

@@ -25,7 +25,9 @@
         "RECORD_AUDIO",
         "READ_CONTACTS",
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -41,6 +43,13 @@
         "expo-av",
         {
           "microphonePermission": "VOKAL memerlukan izin mikrofon untuk memindai sinyal vokal dan mendeteksi indikasi penipuan AI."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "VOKAL memerlukan akses lokasi untuk mengisi lokasi pelaporan scam secara otomatis.",
+          "locationWhenInUsePermission": "VOKAL memerlukan akses lokasi untuk mengisi lokasi pelaporan scam secara otomatis."
         }
       ],
       [

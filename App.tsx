@@ -229,7 +229,6 @@ export default function App() {
   React.useEffect(() => {
     async function prepare() {
       try {
-        // Berikan delay 2 detik agar logo/splash screen terlihat oleh juri
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (e) {
         console.warn(e);

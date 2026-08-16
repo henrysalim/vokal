@@ -12,7 +12,7 @@ export default function VokalMascot({ size = 120 }: { size?: number }) {
         withTiming(-8, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
         withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) })
       ),
-      -1, // Infinite repeat
+      -1,
       true
     );
   }, []);

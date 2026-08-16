@@ -623,7 +623,6 @@ function LeaderboardMini({ leaderboard, loading }: { leaderboard: any[]; loading
   );
 }
 
-// Format countdown for display in hero card
 function formatCountdown(secs: number) {
   const m = Math.floor(secs / 60);
   const s = secs % 60;
@@ -670,14 +669,12 @@ export default function AkademiScreen() {
     if (isDone) type = 'done';
     else if (isChest) type = allPrevDone ? 'chest' : 'locked';
     else if (prevDone) {
-      // If this module would be 'active' but lives are 0, mark as locked_lives
       type = lives <= 0 ? 'locked_lives' : 'active';
     }
     return { ...m, type };
   });
 
   const activeModIdx = modules.findIndex(m => m.type === 'active');
-  // The module the user is currently on (active or locked_lives)
   const currentModIdx = modules.findIndex(m => m.type === 'active' || m.type === 'locked_lives');
 
   const xpNextLevel = level < 3 ? [500, 1500, 3000][level] : 9999;
@@ -686,7 +683,6 @@ export default function AkademiScreen() {
   const handleNodePress = (mod: Module) => {
     if (mod.type === 'locked') return;
     if (mod.type === 'locked_lives') {
-      // Show lives cooldown info
       showConfirm({
         title: 'Nyawa Habis',
         message: `Kamu kehabisan nyawa! Nyawa akan terisi ulang otomatis dalam ${formatCountdown(livesSecondsLeft)}.\n\nKamu hanya bisa melanjutkan dari stage ini setelah nyawa terisi.`,
@@ -730,7 +726,6 @@ export default function AkademiScreen() {
 
   const handleQuizComplete = (xpEarned: number, correct: number, livesLeft: number) => {
     if (xpEarned > 0) addXP(xpEarned);
-    // Only mark done if passed (at least half correct AND had lives remaining)
     if (correct >= Math.ceil(5 / 2) && livesLeft > 0) {
       if (playingModuleId) {
         markModuleComplete(playingModuleId);

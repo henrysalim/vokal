@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Modal, TextInput, ScrollView } from 'react-native';
-import { Radar, AlertTriangle, ShieldCheck, Search, PlusCircle, X, Share2 } from 'lucide-react-native';
+import { View, TouchableOpacity, Modal, TextInput, ScrollView, ActivityIndicator } from 'react-native';
+import { Radar, AlertTriangle, ShieldCheck, Search, PlusCircle, X, Share2, MapPin, Navigation } from 'lucide-react-native';
 import { useScamContext, ScamReport, CheckResult } from '../../context/ScamContext';
 import { useConfirmModal } from './ConfirmModal';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import * as Location from 'expo-location';
 import { AppText } from './AppText';
 
 export default function RadarModus() {
@@ -14,6 +15,8 @@ export default function RadarModus() {
   const [phoneInput, setPhoneInput] = useState('');
   const [locationInput, setLocationInput] = useState('');
   const [scamType, setScamType] = useState('Kecelakaan Anak');
+  const [customScamType, setCustomScamType] = useState('');
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
   const [checkInput, setCheckInput] = useState('');
   const [checkDetails, setCheckDetails] = useState<CheckResult | null>(null);
@@ -21,6 +24,55 @@ export default function RadarModus() {
   const [showShareCard, setShowShareCard] = useState(false);
   const [latestReport, setLatestReport] = useState<ScamReport | null>(null);
   const viewShotRef = React.useRef<any>(null);
+
+  const handleDetectLocation = async () => {
+    setIsFetchingLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        showConfirm({
+          title: 'Izin Lokasi Ditolak',
+          message: 'Izin akses lokasi diperlukan untuk mendeteksi lokasi secara otomatis. Silakan aktifkan secara manual di Pengaturan.',
+          confirmText: 'Mengerti',
+          cancelText: '',
+          variant: 'terracotta',
+          iconType: 'warning',
+        });
+        return;
+      }
+
+      const coords = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const [geo] = await Location.reverseGeocodeAsync({
+        latitude: coords.coords.latitude,
+        longitude: coords.coords.longitude,
+      });
+
+      if (geo) {
+        const parts = [
+          geo.subregion || geo.district || geo.name,
+          geo.city || geo.region,
+        ].filter(Boolean);
+        const locationString = parts.join(', ');
+        setLocationInput(locationString || `${coords.coords.latitude.toFixed(4)}, ${coords.coords.longitude.toFixed(4)}`);
+      } else {
+        setLocationInput(`${coords.coords.latitude.toFixed(4)}, ${coords.coords.longitude.toFixed(4)}`);
+      }
+    } catch (err) {
+      showConfirm({
+        title: 'Gagal Mendapatkan Lokasi',
+        message: 'Tidak dapat mengambil lokasi saat ini. Pastikan GPS aktif, lalu coba lagi atau isi lokasi secara manual.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
+    } finally {
+      setIsFetchingLocation(false);
+    }
+  };
 
   const handleReport = async () => {
     if (phoneInput.length < 8) {
@@ -46,7 +98,23 @@ export default function RadarModus() {
       return;
     }
 
-    await reportScam(phoneInput, scamType, locationInput);
+    const resolvedType = scamType === 'Lainnya'
+      ? (customScamType.trim() || 'Lainnya')
+      : scamType;
+
+    if (scamType === 'Lainnya' && customScamType.trim().length === 0) {
+      showConfirm({
+        title: 'Deskripsi Modus Wajib Diisi',
+        message: 'Kamu memilih "Lainnya". Mohon tuliskan deskripsi singkat jenis modus penipuan yang dialami.',
+        confirmText: 'Mengerti',
+        cancelText: '',
+        variant: 'terracotta',
+        iconType: 'warning',
+      });
+      return;
+    }
+
+    await reportScam(phoneInput, resolvedType, locationInput);
 
     const clean = phoneInput.replace(/[^0-9+]/g, '');
     const prefix = clean.length > 6 ? clean.substring(0, 6) + '-xxx' : clean + '-xxx';
@@ -54,7 +122,7 @@ export default function RadarModus() {
       id: 'temp',
       phoneHash: '...',
       phonePrefix: prefix,
-      type: scamType,
+      type: resolvedType,
       location: locationInput,
       timestamp: Date.now()
     });
@@ -62,6 +130,8 @@ export default function RadarModus() {
     setModalVisible(false);
     setPhoneInput('');
     setLocationInput('');
+    setCustomScamType('');
+    setScamType('Kecelakaan Anak');
 
     setTimeout(() => setShowShareCard(true), 500);
   };
@@ -207,26 +277,81 @@ export default function RadarModus() {
                 onChangeText={setPhoneInput}
               />
 
-              <AppText size="sm" className="font-heading text-espresso mb-1 mt-4">Lokasi (Kecamatan/Kota)</AppText>
-              <TextInput
-                placeholder="Misal: Kebayoran Baru, Jakarta"
-                className="bg-cream p-4 rounded-xl font-body text-espresso border border-espresso/10"
-                value={locationInput}
-                onChangeText={setLocationInput}
-              />
+              <AppText size="sm" className="font-heading text-espresso mb-2 mt-4">Lokasi (Kecamatan/Kota)</AppText>
+
+              {/* Location input + GPS button row */}
+              <View className="flex-row items-center gap-2 mb-2">
+                <View className="flex-1 flex-row items-center bg-cream border border-espresso/10 rounded-xl px-3 py-1">
+                  <MapPin color="#A39686" size={15} />
+                  <TextInput
+                    placeholder="Misal: Kebayoran Baru, Jakarta"
+                    className="flex-1 ml-2 font-body text-sm text-espresso p-2"
+                    placeholderTextColor="#A39686"
+                    value={locationInput}
+                    onChangeText={setLocationInput}
+                  />
+                  {locationInput.length > 0 && (
+                    <TouchableOpacity onPress={() => setLocationInput('')} className="p-1">
+                      <X color="#A39686" size={14} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  onPress={handleDetectLocation}
+                  disabled={isFetchingLocation}
+                  activeOpacity={0.8}
+                  className="bg-olive rounded-xl p-3.5 items-center justify-center"
+                >
+                  {isFetchingLocation
+                    ? <ActivityIndicator size="small" color="#FFFFFF" />
+                    : <Navigation color="#FFFFFF" size={16} />}
+                </TouchableOpacity>
+              </View>
+
+              {/* GPS disclaimer */}
+              <View className="bg-mustard/10 border border-mustard/25 rounded-xl px-3 py-2.5 mb-1 flex-row items-start gap-2">
+                <AppText size="xs" className="text-mustard mt-0.5">⚠️</AppText>
+                <AppText size="xs" className="font-body text-espresso/70 flex-1 leading-relaxed">
+                  Lokasi GPS mungkin sedikit tidak akurat tergantung sinyal. Harap periksa dan koreksi nama lokasi di atas sebelum melaporkan.
+                </AppText>
+              </View>
 
               <AppText size="sm" className="font-heading text-espresso mb-2 mt-4">Jenis Modus</AppText>
-              <View className="flex-row flex-wrap gap-2 mb-6">
+              <View className="flex-row flex-wrap gap-2 mb-3">
                 {['Kecelakaan Anak', 'Transfer Darurat', 'Suara AI/Kloning', 'Lainnya'].map(type => (
                   <TouchableOpacity
                     key={type}
-                    onPress={() => setScamType(type)}
+                    onPress={() => {
+                      setScamType(type);
+                      if (type !== 'Lainnya') setCustomScamType('');
+                    }}
                     className={`px-4 py-2 rounded-full border ${scamType === type ? 'bg-terracotta border-terracotta' : 'bg-cream border-espresso/20'}`}
                   >
                     <AppText size="xs" className={`font-heading ${scamType === type ? 'text-white' : 'text-espresso'}`}>{type}</AppText>
                   </TouchableOpacity>
                 ))}
               </View>
+
+              {/* Free-text input shown only when "Lainnya" is selected */}
+              {scamType === 'Lainnya' && (
+                <View className="mb-4">
+                  <TextInput
+                    placeholder="Deskripsikan modus penipuan secara singkat..."
+                    placeholderTextColor="#A39686"
+                    className="bg-cream border border-terracotta/30 rounded-xl p-3.5 font-body text-sm text-espresso"
+                    value={customScamType}
+                    onChangeText={setCustomScamType}
+                    maxLength={80}
+                    autoFocus
+                  />
+                  <AppText size="xs" className="font-body text-text-muted text-right mt-1">
+                    {customScamType.length}/80
+                  </AppText>
+                </View>
+              )}
+
+              {scamType !== 'Lainnya' && <View className="mb-3" />}
 
               <TouchableOpacity
                 onPress={handleReport}
