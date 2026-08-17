@@ -65,10 +65,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      const cachedSecret = await AsyncStorage.getItem(`@vokal_family_secret_${userId}`);
-      if (cachedSecret) {
-        setFamilySecret(cachedSecret);
-      }
     } catch {
     }
 
@@ -110,10 +106,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
       setLivesRefillAt(refillAt);
     }
 
-    const famSecret = (data.families as any)?.family_secret || (data as any).family_secret;
+    const hasFamilyId = !!(data as any).family_id;
+    const famSecret = hasFamilyId
+      ? ((data.families as any)?.family_secret || (data as any).family_secret)
+      : null;
+
     if (famSecret) {
       setFamilySecret(famSecret);
       AsyncStorage.setItem(`@vokal_family_secret_${userId}`, famSecret).catch(() => {});
+    } else {
+      setFamilySecret('VOKAL_DEFAULT_SECRET');
+      AsyncStorage.removeItem(`@vokal_family_secret_${userId}`).catch(() => {});
     }
   };
 

@@ -29,6 +29,7 @@ import KeluargaScreen from "./src/screens/Keluarga/KeluargaScreen";
 import OnboardingScreen from "./src/screens/Onboarding/OnboardingScreen";
 import EditProfilScreen from "./src/screens/Profil/EditProfilScreen";
 import ProfilScreen from "./src/screens/Profil/ProfilScreen";
+import { PhoneGateModal } from "./src/components/ui/PhoneGateModal";
 
 import AnalisisHubScreen from "./src/screens/Analisis/AnalisisHubScreen";
 import CekEmailScreen from "./src/screens/Analisis/CekEmailScreen";
@@ -197,21 +198,26 @@ function MainNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {!isOnboarded ? (
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-      ) : !user ? (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="Root" component={TabNavigator} />
-          <Stack.Screen name="EditProfil" component={EditProfilScreen} />
-        </>
+    <>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!isOnboarded ? (
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+        ) : !user ? (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Root" component={TabNavigator} />
+            <Stack.Screen name="EditProfil" component={EditProfilScreen} />
+          </>
+        )}
+      </Stack.Navigator>
+      {user && !user.phone && (
+        <PhoneGateModal visible={true} />
       )}
-    </Stack.Navigator>
+    </>
   );
 }
 

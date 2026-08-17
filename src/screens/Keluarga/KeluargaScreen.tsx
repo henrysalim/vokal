@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import {
   AlertCircle,
   BellRing,
+  CheckCircle2,
   CheckSquare,
   ChevronDown,
   ChevronUp,
@@ -20,6 +21,7 @@ import {
   Trash2,
   UserPlus,
   X,
+  XCircle,
 } from "lucide-react-native";
 import React, { useCallback, useMemo, useState } from "react";
 import {
@@ -86,6 +88,14 @@ type FamilyMember = {
   phone?: string;
 };
 
+type FamilyInvitation = {
+  id: string;
+  from_name: string;
+  family_id: string;
+  family_secret: string;
+  created_at: string;
+};
+
 export default function KeluargaScreen() {
   const { user } = useAuth();
   const currentUserName = user?.name || "Pengguna VOKAL";
@@ -101,6 +111,7 @@ export default function KeluargaScreen() {
       verified: true,
     },
   ]);
+  const [pendingInvitations, setPendingInvitations] = useState<FamilyInvitation[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const PENDING_STORAGE_KEY = user?.id
@@ -194,7 +205,26 @@ export default function KeluargaScreen() {
     );
 
     setFamilyMembers([selfMember, ...otherMembers, ...activePending]);
-  }, [user?.id, user?.name, currentUserName, familySecret, getPendingMembers]);
+
+    if (user?.phone) {
+      const normalizedMyPhone = user.phone.replace(/[^0-9]/g, '');
+      const phone62 = normalizedMyPhone.startsWith('0')
+        ? '62' + normalizedMyPhone.substring(1)
+        : normalizedMyPhone;
+
+      const { data: invitations } = await supabase
+        .from('family_invitations')
+        .select('id, from_name, family_id, family_secret, created_at')
+        .in('to_phone', [normalizedMyPhone, phone62])
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      setPendingInvitations(invitations || []);
+    } else {
+      setPendingInvitations([]);
+    }
+  }, [user?.id, user?.name, user?.phone, currentUserName, familySecret, getPendingMembers]);
+
 
   React.useEffect(() => {
     loadFamilyMembers();
@@ -400,6 +430,38 @@ export default function KeluargaScreen() {
       setFamilyMembers((prev) => [...prev, ...filteredNew]);
     }
 
+    if (isSupabaseConfigured() && user?.id && familySecret && familySecret !== "VOKAL_DEFAULT_SECRET") {
+      const { data: myProfile } = await supabase
+        .from("profiles")
+        .select("family_id")
+        .eq("id", user.id)
+        .single();
+
+      const myFamilyId = myProfile?.family_id;
+
+      if (myFamilyId) {
+        const invitationRows = contactsToAdd.map((contact) => {
+          const rawPhone = contact.phoneNumbers?.[0]?.number || "";
+          let normalizedPhone = rawPhone.replace(/[^0-9]/g, "");
+          if (normalizedPhone.startsWith("0")) {
+            normalizedPhone = "62" + normalizedPhone.substring(1);
+          }
+          return {
+            from_user_id: user.id,
+            from_name: user.name || currentUserName,
+            to_phone: normalizedPhone,
+            family_id: myFamilyId,
+            family_secret: familySecret,
+            status: "pending",
+          };
+        }).filter((row) => row.to_phone.length > 0);
+
+        if (invitationRows.length > 0) {
+          await supabase.from("family_invitations").insert(invitationRows);
+        }
+      }
+    }
+
     setShowContactsModal(false);
     setSelectedContactIds([]);
     setSearchQuery("");
@@ -454,6 +516,7 @@ export default function KeluargaScreen() {
     }, 400);
   };
 
+
   const removePendingMember = (memberId: string, memberName: string) => {
     showConfirm({
       title: "Hapus Undangan",
@@ -502,6 +565,67 @@ export default function KeluargaScreen() {
       });
     }
   };
+
+  const handleAcceptInvitation = (invitation: FamilyInvitation) => {
+    showConfirm({
+      title: "Terima Undangan",
+      message: `Bergabung ke keluarga ${invitation.from_name}? Codeword kamu akan tersinkronisasi secara otomatis.`,
+      confirmText: "Terima & Bergabung",
+      cancelText: "Nanti",
+      variant: "olive",
+      iconType: "success",
+      onConfirm: async () => {
+        if (!isSupabaseConfigured() || !user?.id) return;
+
+        await supabase
+          .from("family_invitations")
+          .update({ status: "accepted", updated_at: new Date().toISOString() })
+          .eq("id", invitation.id);
+
+        await supabase
+          .from("profiles")
+          .update({
+            family_id: invitation.family_id,
+            family_secret: invitation.family_secret,
+          })
+          .eq("id", user.id);
+
+        setPendingInvitations((prev) => prev.filter((inv) => inv.id !== invitation.id));
+
+        await loadFamilyMembers();
+
+        showConfirm({
+          title: "Berhasil Bergabung! 🎉",
+          message: `Kamu sekarang tergabung dalam keluarga ${invitation.from_name} di VOKAL. Codeword anti-scam sudah tersinkronisasi!`,
+          confirmText: "Mantap!",
+          cancelText: "",
+          variant: "olive",
+          iconType: "success",
+        });
+      },
+    });
+  };
+
+  const handleRejectInvitation = (invitation: FamilyInvitation) => {
+    showConfirm({
+      title: "Tolak Undangan",
+      message: `Yakin menolak undangan dari ${invitation.from_name}?`,
+      confirmText: "Tolak",
+      cancelText: "Batal",
+      variant: "terracotta",
+      iconType: "warning",
+      onConfirm: async () => {
+        if (isSupabaseConfigured()) {
+          await supabase
+            .from("family_invitations")
+            .update({ status: "rejected", updated_at: new Date().toISOString() })
+            .eq("id", invitation.id);
+        }
+        setPendingInvitations((prev) => prev.filter((inv) => inv.id !== invitation.id));
+      },
+    });
+  };
+
 
   const handlePickSelected = () => {
     const selected = deviceContacts.filter((c) =>
@@ -651,6 +775,71 @@ export default function KeluargaScreen() {
             </LinearGradient>
           </View>
         </Animated.View>
+
+        {pendingInvitations.length > 0 && (
+          <Animated.View
+            entering={FadeInDown.delay(170).springify()}
+            className="mb-5"
+          >
+            <View className="flex-row items-center gap-2 mb-3">
+              <View className="w-6 h-6 rounded-full bg-mustard items-center justify-center">
+                <AppText size="xs" className="text-espresso font-heading">
+                  {pendingInvitations.length}
+                </AppText>
+              </View>
+              <AppText size="base" className="text-espresso font-heading">
+                Undangan Masuk
+              </AppText>
+            </View>
+
+            <View className="gap-3">
+              {pendingInvitations.map((invitation) => (
+                <View
+                  key={invitation.id}
+                  className="bg-mustard/10 border border-mustard/30 rounded-2xl p-4"
+                >
+                  <View className="flex-row items-start justify-between mb-3">
+                    <View className="flex-1 pr-3">
+                      <AppText size="sm" className="font-heading text-espresso">
+                        {invitation.from_name}
+                      </AppText>
+                      <AppText size="xs" className="font-body text-text-muted mt-0.5">
+                        mengundang kamu bergabung ke keluarga mereka
+                      </AppText>
+                    </View>
+                    <View className="w-10 h-10 rounded-full bg-mustard/20 items-center justify-center">
+                      <ShieldCheck color="#E8A33D" size={20} />
+                    </View>
+                  </View>
+
+                  <View className="flex-row gap-2">
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => handleAcceptInvitation(invitation)}
+                      className="flex-1 bg-olive rounded-xl py-2.5 px-3 flex-row items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle2 color="#FFFFFF" size={15} />
+                      <AppText size="xs" className="text-white font-heading">
+                        Terima
+                      </AppText>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => handleRejectInvitation(invitation)}
+                      className="flex-1 bg-terracotta/10 border border-terracotta/30 rounded-xl py-2.5 px-3 flex-row items-center justify-center gap-1.5"
+                    >
+                      <XCircle color="#C1592E" size={15} />
+                      <AppText size="xs" className="text-terracotta font-heading">
+                        Tolak
+                      </AppText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </Animated.View>
+        )}
 
         {/* EMERGENCY CALL SECTION */}
         <Animated.View
